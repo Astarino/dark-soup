@@ -111,6 +111,9 @@ const ETYPES = {
   runner: { hp: 12, spd: 118, dmg: 6, r: 11, xp: 1 },
   brute: { hp: 110, spd: 50, dmg: 18, r: 24, xp: 6 },
 };
+const STATUS_EFFECTS = {
+  burning: { interval: 0.5, damage: 3, onTick: enemy => damageEnemy(enemy, STATUS_EFFECTS.burning.damage) },
+};
 const ST = {
   carrot: l => ({ cd: +Math.max(0.8, 2.0 - 0.2 * (l - 1)).toFixed(1), n: 1 + Math.floor((l - 1) / 2) + (l >= 6 ? 1 : 0), dmg: 22 + 8 * (l - 1), r: 55 + 6 * (l - 1) }),
   cabbage: l => ({ cd: Math.max(10, 30 - 4 * (l - 1)), R: 170 + 30 * (l - 1), dmg: 35 + 15 * (l - 1), trig: 110 }),
@@ -517,6 +520,7 @@ function reset() {
   P = {
     x: CX, y: CY + 20, r: 22, vx: 0, vy: 0, baseSpeed: 175, speed: 175, hp: 100, maxHp: 100, iframe: 0,
     xp: 0, lvl: 1, need: needFor(1), pending: 0, walk: 0, face: 1, dmgMul: 1, magnet: 90,
+    contactEffects: ['burning'],
     lv: { carrot: 0, cabbage: 0, onion: 0, salt: 0, pepper: 0, broth: 0, laurel: 0 },
     cd: { carrot: 0, cabbage: 0 },
   };
@@ -747,7 +751,7 @@ const fmtTime = t => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStar
 function spawnEnemy(type, x, y) {
   const T = ETYPES[type], hpMul = 1 + time / 150;
   enemies.push({ type, x, y, r: T.r, hp: T.hp * hpMul, max: T.hp * hpMul, spd: T.spd * rand(0.88, 1.12), dmg: T.dmg, xp: T.xp,
-    kx: 0, ky: 0, flash: 0, anim: rand(0, TAU), face: 1, oh: {}, wave: -1, dead: false });
+    kx: 0, ky: 0, flash: 0, anim: rand(0, TAU), face: 1, oh: {}, wave: -1, dead: false, effects: {} });
 }
 function edgePos() {
   const a = rand(0, TAU), d = Math.hypot(VW(), VH()) / 2 + 70;
@@ -777,18 +781,40 @@ function updateSpawns(dt) {
     texts.push({ x: P.x, y: P.y - 130, t: 0, life: 1.8, txt: tr('horde'), col: '#ff6a4a', size: 16 });
   }
 }
-function hurt(e, dmg, fx, fy, kb) {
+function applyStatusEffect(target, id) {
+  const effect = STATUS_EFFECTS[id];
+  if (!effect || target.dead || target.effects[id]) return;
+  target.effects[id] = { elapsed: 0 };
+  for (let i = 0; i < 7; i++) parts.push({ x: target.x + rand(-target.r, target.r), y: target.y - rand(target.r, target.r * 2), vx: rand(-35, 35), vy: rand(-115, -35), g: -25, life: rand(0.25, 0.5), t: 0, r: rand(2, 4), c: i % 2 ? '#f7aa35' : '#ffdc75' });
+}
+function removeStatusEffect(target, id) { delete target.effects[id]; }
+function updateStatusEffects(target, dt) {
+  for (const [id, state] of Object.entries(target.effects)) {
+    const effect = STATUS_EFFECTS[id];
+    state.elapsed += dt;
+    while (state.elapsed + 1e-9 >= effect.interval && !target.dead) {
+      state.elapsed = Math.max(0, state.elapsed - effect.interval);
+      effect.onTick(target);
+    }
+  }
+}
+function damageEnemy(e, dmg) {
   if (e.dead) return;
-  dmg = Math.max(1, Math.round(dmg * P.dmgMul * rand(0.9, 1.1)));
-  e.hp -= dmg; e.flash = 0.12;
-  const d = Math.hypot(fx, fy) || 1, k = kb * (e.type === 'brute' ? 0.35 : 1);
-  e.kx += fx / d * k; e.ky += fy / d * k;
-  texts.push({ x: e.x + rand(-6, 6), y: e.y - e.r * 3, t: 0, life: 0.6, txt: String(dmg), col: '#fff3d6', size: 8 });
+  e.hp -= dmg;
   if (e.hp <= 0) {
     e.dead = true; kills++;
     gems.push({ x: e.x, y: e.y, v: e.xp, vx: rand(-40, 40), vy: rand(-40, 40), pull: false });
-    for (let i = 0; i < 12; i++) parts.push({ x: e.x, y: e.y - e.r, vx: rand(-120, 120), vy: rand(-170, 30), g: 380, life: rand(0.3, 0.7), t: 0, r: rand(2, 5), c: i % 3 ? '#5b7a2c' : '#2b2a1a' });
+    for (let i = 0; i < 12; i++) parts.push({ x: e.x, y: e.y - e.r, vx: rand(-120, 120), vy: rand(-170, 30), g: 380, life: rand(0.3, 0.7), t: 0, r: rand(2, 5), c: e.effects.burning ? (i % 2 ? '#ee7a22' : '#ffc247') : (i % 3 ? '#5b7a2c' : '#2b2a1a') });
   }
+}
+function hurt(e, dmg, fx, fy, kb) {
+  if (e.dead) return;
+  dmg = Math.max(1, Math.round(dmg * P.dmgMul * rand(0.9, 1.1)));
+  e.flash = 0.12;
+  const d = Math.hypot(fx, fy) || 1, k = kb * (e.type === 'brute' ? 0.35 : 1);
+  e.kx += fx / d * k; e.ky += fy / d * k;
+  texts.push({ x: e.x + rand(-6, 6), y: e.y - e.r * 3, t: 0, life: 0.6, txt: String(dmg), col: '#fff3d6', size: 8 });
+  damageEnemy(e, dmg);
 }
 function updateEnemies(dt) {
   const n = enemies.length;
@@ -805,6 +831,8 @@ function updateEnemies(dt) {
   const kd = Math.exp(-7 * dt);
   for (const e of enemies) {
     if (e.dead) continue;
+    updateStatusEffects(e, dt);
+    if (e.dead) continue;
     const dx = P.x - e.x, dy = P.y - e.y, d = Math.hypot(dx, dy) || 1;
     if (d > 1500) { const [x, y] = edgePos(); e.x = x; e.y = y; continue; }
     const slow = e.flash > 0 ? 0.4 : 1;
@@ -814,6 +842,7 @@ function updateEnemies(dt) {
     e.face = dx >= 0 ? 1 : -1; e.anim += dt * e.spd * 0.06; e.flash -= dt;
     if (d < e.r + P.r - 4 && P.iframe <= 0) {
       P.hp -= e.dmg; P.iframe = 0.6; shake = Math.min(8, shake + 5);
+      for (const effect of P.contactEffects) applyStatusEffect(e, effect);
       e.kx -= dx / d * 260; e.ky -= dy / d * 260;
       texts.push({ x: P.x, y: P.y - 90, t: 0, life: 0.7, txt: '-' + e.dmg, col: '#ff5a4a', size: 8 });
       for (let k = 0; k < 8; k++) parts.push({ x: P.x, y: P.y - 50, vx: rand(-90, 90), vy: rand(-160, -40), g: 300, life: rand(0.3, 0.6), t: 0, r: rand(2, 4), c: '#e07b2f' });
@@ -979,6 +1008,26 @@ function drawTree(t) {
   ctx.drawImage(s.img, X - s.ax, Y - s.ay);
   ctx.globalAlpha = 1;
 }
+function drawBurning(e, fr, X, Y) {
+  const phase = Math.floor(time * 13) + Math.floor(e.anim);
+  const base = Y - Math.max(4, Math.round(fr.ay * 0.16));
+  const spread = Math.max(5, Math.round(fr.w * 0.28));
+  for (let i = 0; i < 5; i++) {
+    const h = Math.round(fr.ay * 0.28) + 4 + ((phase + i * 7) % 6);
+    const root = X + Math.round((i - 2) * spread * 0.5);
+    for (let y = 0; y < h; y++) {
+      const tip = y / h, sway = Math.round(Math.sin(phase * 0.7 + i * 2 + y * 0.5) * tip * 2);
+      const width = tip < 0.35 ? 3 : tip < 0.75 ? 2 : 1;
+      const color = tip > 0.8 ? '#ffca55' : (i + y + phase) % 4 ? '#ee7620' : '#ffd36a';
+      pRect(root + sway - Math.floor(width / 2), base - y, width, 1, color);
+    }
+  }
+  for (let i = 0; i < 3; i++) {
+    const x = X + ((phase * (i + 2) + i * 13) % (spread * 2 + 1)) - spread;
+    const y = base - Math.round(fr.ay * 0.35) - ((phase + i * 5) % 9);
+    pRect(x, y, 1, 1, i === 0 ? '#fff0a0' : '#ffad3a');
+  }
+}
 function drawGoblin(e) {
   const fr = GOB[e.type][Math.floor(e.anim) % 2], X = sx(e.x), Y = sy(e.y);
   pEll(X, Y, Math.round(e.r / K) + 1, e.type === 'brute' ? 3 : 2, 'rgba(0,0,0,.4)');
@@ -1070,6 +1119,10 @@ function drawEffectsGround() {
   }
 }
 function drawEffectsAir() {
+  for (const e of enemies) if (e.effects.burning && e.x > (camL - 40) * K && e.x < (camL + LW + 40) * K && e.y > (camT - 40) * K && e.y < (camT + LH + 40) * K) {
+    const fr = GOB[e.type][Math.floor(e.anim) % 2];
+    drawBurning(e, fr, sx(e.x), sy(e.y));
+  }
   if (P.lv.onion > 0 && state !== 'over') {
     for (let k = 6; k >= 1; k--) for (const b of onionBalls(k * 0.035)) pRect(sx(b.x), sy(b.y), k < 3 ? 2 : 1, 1, `rgba(255,214,140,${0.5 * (1 - k / 7)})`);
     for (const b of onionBalls()) {
