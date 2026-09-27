@@ -169,10 +169,9 @@ export function createRenderer(cvs, world, tr) {
         t = Math.floor(time * 14) / 14 + seed,
         H = fr.ay,
         W = Math.max(8, Math.round(fr.w * 0.46)),
-        base = Y - Math.round(H * 0.08),
+        base = Y - Math.round(H * 0.12),
         N = e.type === "brute" ? 7 : 5,
         noise = (a, b) => (Math.sin(t * a + b) + Math.sin(t * a * 0.63 + b * 1.7)) * 0.25 + 0.5;
-      pEll(X, base - 2, W * 0.55, 3, "rgba(255,150,50,.35)");
       for (let i = 0; i < 3; i++) {
         const k = (time * 0.9 + i * 0.33 + seed * 0.1) % 1;
         pRect(
@@ -186,15 +185,22 @@ export function createRenderer(cvs, world, tr) {
       for (let i = 0; i < N; i++) {
         const u = i / (N - 1) - 0.5,
           cx = X + Math.round(u * W),
-          h = Math.max(3, Math.round(H * (0.3 + 0.45 * noise(9, i * 1.9 + seed)) * (1 - Math.abs(u) * 0.8))),
-          maxW = Math.abs(u) < 0.3 ? 4 : 3;
+          outer = Math.abs(u) > 0.3,
+          h = Math.max(4, Math.round(H * (0.35 + 0.45 * noise(9, i * 1.9 + seed)) * (1 - Math.abs(u) * 0.7))),
+          maxW = outer ? 2 : 3;
         for (let y = 0; y < h; y++) {
-          const k = y / h;
-          if (k > 0.8 && (y + i + Math.floor(t * 14)) % 2) continue; // рваные кончики
-          const w = Math.max(1, Math.round(maxW * Math.pow(1 - k, 0.7))),
-            sway = Math.round(Math.sin(t * 7 + i * 1.3 + y * 0.45) * 1.6 * k),
-            c = k < 0.22 ? "#fff4c0" : k < 0.45 ? "#ffd24a" : k < 0.7 ? "#ff8a1e" : k < 0.88 ? "#e2481a" : "#8a1e0c";
-          pRect(cx + sway - (w >> 1), base - y, w, 1, c);
+          const k = y / h,
+            flick = Math.floor(t * 14);
+          if (k > 0.8 && (y + i + flick) % 2) continue; // рваные кончики
+          const w = Math.max(1, Math.round(maxW * Math.pow(1 - k, 0.9))),
+            sway = Math.round(Math.sin(t * 7 + i * 1.3 + y * 0.45) * 1.8 * k),
+            // белое ядро только у центральных языков, крайние — оранжевые
+            c = k < 0.18 ? (outer ? "#ffb030" : "#fff0b0") : k < 0.42 ? (outer ? "#ff8a1e" : "#ffd24a") : k < 0.68 ? "#ff7a1a" : k < 0.86 ? "#d8401a" : "#7a1a0a",
+            x0 = cx + sway - (w >> 1);
+          // верхняя половина языка сквозная, чтобы горящего врага было видно
+          if (k > 0.55) {
+            for (let q = 0; q < w; q++) if ((x0 + q + y + flick) % 2 === 0) pRect(x0 + q, base - y, 1, 1, c);
+          } else pRect(x0, base - y, w, 1, c);
         }
       }
       for (let i = 0; i < 4; i++) {
@@ -220,7 +226,8 @@ export function createRenderer(cvs, world, tr) {
         const fl = 1 + ((Math.floor(time * 10 + e.max) % 3) - 1) * 0.08,
           r = (e.type === "brute" ? 30 : 20) * fl,
           g = ctx.createRadialGradient(X, Y, 0, X, Y, r);
-        for (const [st, a] of [[0, 0.24], [0.35, 0.24], [0.35, 0.13], [0.7, 0.13], [0.7, 0.05], [1, 0.05], [1, 0]])
+        // слабое: у толпы горящих свечение складывается
+        for (const [st, a] of [[0, 0.13], [0.35, 0.13], [0.35, 0.07], [0.7, 0.07], [0.7, 0.03], [1, 0.03], [1, 0]])
           g.addColorStop(st, `rgba(255,120,40,${a})`);
         ctx.fillStyle = g;
         ctx.fillRect(X - r, Y - r, r * 2, r * 2);

@@ -5,6 +5,11 @@ import { createWorld } from "../src/world/world.js";
 import { createPreferences } from "../src/storage/preferences.js";
 import { UPG } from "../src/systems/upgrades.js";
 import { mulberry32 } from "../src/shared/math.js";
+import { createPlayer } from "../src/core/player.js";
+import { createVisualState } from "../src/systems/visual-effects.js";
+import { createCombat } from "../src/systems/combat.js";
+import { createStatusSystem } from "../src/effects/status.js";
+import { updateEnemies } from "../src/systems/enemies.js";
 
 // Звук живёт в браузере; здесь проверяем игровые события, из которых он строится.
 test("gameplay emits distinct sound events per attack and snapshots stay clean", () => {
@@ -53,4 +58,16 @@ test("sound preference is stored and defaults to on", () => {
   p.saveSound(false);
   assert.equal(map.get("dark_soup_sound"), "0");
   assert.equal(p.sound(), false);
+});
+
+test("an enemy ramming the cauldron emits the ignition sound", () => {
+  const player = createPlayer(),
+    fx = createVisualState(),
+    combat = createCombat(player, [], fx, () => {}),
+    status = createStatusSystem(fx, combat.damageEnemy);
+  const enemy = { type: "goblin", x: player.x + 10, y: player.y, r: 14, hp: 22, max: 22, spd: 72, dmg: 8, xp: 1, kx: 0, ky: 0, flash: 0, anim: 0, face: 1, oh: {}, dead: false, effects: {} };
+  player.iframe = 0;
+  updateEnemies(player, [enemy], fx, 1 / 60, { pushOut() {}, edgePos: () => [0, 0], ...status });
+  assert.ok(fx.sounds.some((s) => s.id === "contactBurn"));
+  assert.ok(enemy.effects.burning, "the enemy catches fire");
 });
