@@ -209,6 +209,7 @@ export function createUI(
     resetFrameTime();
   }
   function startRun() {
+    recordFinishedRun();
     hideAll();
     game.start();
     previous = "";
@@ -216,6 +217,7 @@ export function createUI(
     resetFrameTime();
   }
   function toMainMenu() {
+    recordFinishedRun();
     hideAll();
     game.toMenu();
     previous = "";
@@ -260,15 +262,19 @@ export function createUI(
     $("levelup").classList.add("show");
   }
   // Конец готовки: запись в статистику и итоги со всем составом супа.
-  function gameOver() {
-    $("pauseBtn").style.display = "none";
-    const run = game.runStats(),
-      { isRecord } = statsStore.recordRun(run);
+  function recordFinishedRun() {
+    const run = game.finishRun();
+    if (!run) return;
+    const { isRecord } = statsStore.recordRun(run);
     if (run.time > best) {
       best = run.time;
       preferences.saveBest(best);
     }
     lastSummary = { run, isRecord };
+  }
+  function gameOver() {
+    $("pauseBtn").style.display = "none";
+    recordFinishedRun();
     showSummary();
     $("over").classList.add("show");
   }

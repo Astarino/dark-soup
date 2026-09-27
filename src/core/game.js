@@ -47,7 +47,8 @@ export function createGame(
     warden,
     slowmo = 0,
     kills,
-    run;
+    run,
+    runFinished = true;
   // Главное меню: время сцены лагеря и плавный пролёт камеры к котлу.
   const INTRO = 1.4;
   let menuTime = 0,
@@ -119,6 +120,7 @@ export function createGame(
   function start({ intro: withIntro = false } = {}) {
     const from = { x: cam.x, y: cam.y };
     reset();
+    runFinished = false;
     if (withIntro) {
       state = "intro";
       intro = { t: 0, from };
@@ -129,6 +131,7 @@ export function createGame(
   function toMenu() {
     const from = { x: cam.x, y: cam.y };
     reset();
+    runFinished = true;
     choices = [];
     state = "menu";
     cam.x = from.x;
@@ -151,6 +154,16 @@ export function createGame(
       damageTotal,
       ...run,
     });
+  }
+  // Consume the result once, before a restart/menu reset discards the run.
+  function finishRun() {
+    if (runFinished || state === "menu") return null;
+    runFinished = true;
+    const result = runStats();
+    player.hp = 0;
+    choices = [];
+    state = "over";
+    return result;
   }
   function pause(on) {
     if (on && state === "play") state = "pause";
@@ -244,6 +257,7 @@ export function createGame(
     start,
     toMenu,
     runStats,
+    finishRun,
     pause,
     choose,
     step,

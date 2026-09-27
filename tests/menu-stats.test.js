@@ -24,6 +24,46 @@ const memory = () => {
   return { map, getItem: (k) => map.get(k), setItem: (k, v) => map.set(k, v) };
 };
 
+test("abandoned runs count once before menu or restart, including first pick", () => {
+  const g = createGame(), store = createStatsStore(memory());
+  const save = () => {
+    const result = g.finishRun();
+    if (result) store.recordRun(result);
+    return result;
+  };
+  assert.equal(save(), null, "opening the app is not a run");
+  g.start();
+  g.choose(0);
+  g.step(1 / 60);
+  g.pause(true);
+  const expected = g.runStats();
+  assert.deepEqual(save(), expected);
+  assert.equal(g.state, "over");
+  assert.equal(g.snapshot().player.hp, 0);
+  assert.equal(save(), null, "death/menu/restart cannot count twice");
+  g.toMenu();
+  assert.equal(save(), null);
+  assert.equal(store.load().runs, 1);
+  g.start();
+  save();
+  g.start();
+  save();
+  assert.equal(store.load().runs, 3, "each restarted first-pick screen counts");
+});
+
+test("natural death and subsequent exit share one run result", () => {
+  const world = createWorld();
+  const g = createGame({ ...world, pushOut(e) { if (e.lv) e.hp = 0; } });
+  g.start();
+  g.choose(0);
+  g.step(DT);
+  assert.equal(g.state, "over");
+  assert.ok(g.finishRun());
+  assert.equal(g.finishRun(), null);
+  g.toMenu();
+  assert.equal(g.finishRun(), null);
+});
+
 test("main menu frames the camp; Play glides the camera to the cauldron, then first pick", () => {
   const g = createGame();
   g.setViewport(1200, 800);
