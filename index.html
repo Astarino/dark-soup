@@ -197,6 +197,11 @@
   </div>
 </div>
 
-<script src="game.js"></script>
+<script>
+if (location.protocol === 'file:') {
+  document.getElementById('menuIntro').textContent = 'Запустите «Запустить игру.command» или npm start и откройте http://localhost:5173. ES-модулям нужен локальный сервер.';
+}
+</script>
+<script type="module" src="game.js"></script>
 </body>
 </html>
