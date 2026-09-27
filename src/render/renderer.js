@@ -14,7 +14,7 @@ import {
   PELLETS,
   FALL_TOMATO,
   PEPPER_SLICE,
-  CABBAGE_LEAVES,
+  buildCabbageRosette,
   FIRE_LOGS,
   onionSprite,
   logSprite,
@@ -34,6 +34,9 @@ export function createRenderer(cvs, world, tr) {
   }
   const trees = world.trees.map((t) => ({ ...t, spr: asset(t.spr) }));
   const props = world.props.map((p) => ({ ...p, s: asset(p.s) }));
+  // Раскладка листьев капусты живёт до конца забега; новый забег узнаём по
+  // откату игровых часов назад.
+  const cabbage = { layout: null, key: "", frames: null, born: 0, lastTime: 0 };
   return function render(snapshot, view, joy) {
     const {
       player,
@@ -57,6 +60,8 @@ export function createRenderer(cvs, world, tr) {
     } = snapshot;
     const { W, H, DPR, PX, LW, LH, SAFE } = view;
     const orbitBalls = (offset = 0) => onionBalls(player, time, offset);
+    if (time < cabbage.lastTime - 1e-6 || !(player.lv.cabbage > 0)) cabbage.layout = null;
+    cabbage.lastTime = time;
     let camL = 0,
       camT = 0;
     const sx = (wx) => Math.round(wx / K) - camL;
@@ -326,40 +331,41 @@ export function createRenderer(cvs, world, tr) {
         }
       }
     }
-    // Постоянное поле капусты: три кольца листьев, которые медленно дрейфуют,
-    // покачиваются и чуть смещаются. Рисуется под врагами и котлом.
+    // Капуста: розетка из 5–7 больших листьев вокруг котла. Раскладка случайная
+    // на каждый забег; картинка собирается один раз на уровень (3 кадра
+    // покачивания) и при получении капусты «вырастает» из котла.
     function drawCabbageField() {
       if (!(player.lv.cabbage > 0) || state === "over") return;
-      const R = ABILITY_STATS.cabbage(player.lv.cabbage).R / K,
-        X = sx(player.x),
-        Y = sy(player.y);
-      pRing(X, Y, R, R * 0.8, "rgba(150,220,90,.28)", 2, Math.floor(time * 3));
-      ctx.globalAlpha = 0.9;
-      for (const [ring, share, spacing] of [
-        [0, 0.97, 19],
-        [1, 0.74, 23],
-        [2, 0.5, 28],
-      ]) {
-        const r = R * share,
-          n = Math.max(5, Math.round((TAU * r * 0.9) / spacing)),
-          step = TAU / n,
-          drift = time * 0.1 * (ring % 2 ? -1 : 1);
-        for (let i = 0; i < n; i++) {
-          // Постоянный «беспорядок» у каждого листа, чтобы не было ровных бус.
-          const h1 = Math.sin(i * 12.9898 + ring * 78.233) * 43758.5453,
-            jitter = h1 - Math.floor(h1),
-            phase = i * 1.7 + ring * 2.3,
-            an = i * step + drift + (jitter - 0.5) * step * 0.7 + Math.sin(time * 1.3 + phase) * 0.03,
-            rr = r + (jitter - 0.5) * 10 + Math.sin(time * 2.1 + phase) * 1.5,
-            lx = Math.round(X + Math.cos(an) * rr),
-            ly = Math.round(Y + Math.sin(an) * rr * 0.8),
-            tilt = Math.sin(time * 0.8 + phase) * 0.45 + (jitter - 0.5) * 1.2,
-            rot = (((Math.round((an + Math.PI / 2 + tilt) / (Math.PI / 4)) % 8) + 8) % 8),
-            img = CABBAGE_LEAVES[Math.floor(jitter * 3)][rot];
-          ctx.drawImage(img, lx - 9, ly - 9);
-        }
+      if (!cabbage.layout) {
+        const n = 5 + Math.floor(Math.random() * 3),
+          base = Math.random() * TAU;
+        cabbage.layout = {
+          leaves: Array.from({ length: n }, (_, i) => ({
+            angle: base + (i * TAU) / n + (Math.random() - 0.5) * (TAU / n) * 0.3,
+            len: 0.9 + Math.random() * 0.15,
+            width: 0.72 + Math.random() * 0.18, // уже сектора: между листьями видны границы
+          })),
+        };
+        cabbage.born = time;
+        cabbage.key = "";
       }
+      const R = ABILITY_STATS.cabbage(player.lv.cabbage).R / K;
+      if (cabbage.key !== String(R)) {
+        cabbage.key = String(R);
+        cabbage.frames = [0, 1, 2].map((f) => buildCabbageRosette(R, cabbage.layout, f));
+      }
+      const X = sx(player.x),
+        Y = sy(player.y),
+        fr = cabbage.frames[[0, 1, 2, 1][Math.floor(time * 2.5) % 4]],
+        grow = Math.min(1, (time - cabbage.born) / 0.6);
+      ctx.globalAlpha = 0.88;
+      if (grow < 1) {
+        const w = Math.max(1, Math.round(fr.img.width * grow)),
+          h = Math.max(1, Math.round(fr.img.height * grow));
+        ctx.drawImage(fr.img, X - (w >> 1), Y - (h >> 1), w, h);
+      } else ctx.drawImage(fr.img, X - fr.ax, Y - fr.ay);
       ctx.globalAlpha = 1;
+      pRing(X, Y, R, R * 0.8, "rgba(170,230,110,.3)", 2, Math.floor(time * 3));
     }
     function drawEffectsGround() {
       // В большом залпе метки падения бледнее, чтобы не сливаться в оранжевый шум.

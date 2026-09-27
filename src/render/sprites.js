@@ -331,49 +331,83 @@ export const PEPPER_SLICE = Array.from({ length: 8 }, (_, k) => {
   pb.outline(OUT);
   return pb.canvas();
 });
-// Лист капусты для постоянного поля: неровный край, светлая центральная
-// жилка и боковые прожилки. 3 варианта × 8 поворотов (пиксели без поворота холста).
-export const CABBAGE_LEAVES = [0, 1, 2].map((variant) =>
-  Array.from({ length: 8 }, (_, k) => {
-    const size = 19,
-      c = size / 2,
-      a = (k * Math.PI) / 4,
-      ca = Math.cos(a),
-      sa = Math.sin(a),
-      L = 8.2 - variant * 0.7,
-      Wd = 5.6 + variant * 0.5;
-    const pb = new PB(size, size);
-    for (let y = 0; y < size; y++)
-      for (let x = 0; x < size; x++) {
-        const dx = x + 0.5 - c,
-          dy = y + 0.5 - c,
-          u = dx * ca + dy * sa,
-          v = -dx * sa + dy * ca,
-          // волнистый край листа
-          ruffle = 1 - 0.2 * Math.abs(Math.sin(u * 1.3 + variant * 2 + (v > 0 ? 1 : 0))),
-          q = (u / L) ** 2 + (v / Wd) ** 2;
-        if (q > ruffle) continue;
-        const midrib = Math.abs(v) < 0.6 && u > -L * 0.95 && u < L * 0.8,
-          vein = [-4, -1.5, 1].some(
-            (u0) => u > u0 && Math.abs(Math.abs(v) - (u - u0) * 0.85) < 0.5 && q < 0.75,
-          );
-        const shade = 0.62 + (v > 0 ? -0.18 : 0.12) - q * 0.45 + variant * 0.04;
-        pb.set(
-          x,
-          y,
-          midrib
-            ? "#eaf6d0"
-            : vein
-              ? "#cfe9a0"
-              : q > ruffle - 0.18
-                ? "#4f8a2c"
-                : ramp(["#4f8a2c", "#6aa83c", "#86c452", "#a6d86a", "#c2e68a"], shade, x, y),
-      );
+// Розетка капусты: 5–7 больших листьев растут из-под котла и вместе образуют
+// круг поля. Форма как у настоящего листа: узкое основание, широкий скруглённый
+// край, светлая центральная жилка, веер боковых прожилок и мелкая сетка.
+// layout: { leaves: [{ angle, len, width }] } — случайный на каждый забег.
+// frame 0–2 — фазы покачивания. Листья лежат на земле: по высоте сжатие 0,8.
+const LEAF_RAMP = ["#2c5418", "#3f7524", "#57942e", "#72ae3c", "#90c650", "#b4dc78"];
+export function buildCabbageRosette(radiusPx, layout, frame) {
+  const R = Math.max(8, radiusPx),
+    half = Math.ceil(R * 1.08) + 3,
+    w = half * 2,
+    h = Math.ceil(half * 0.8) * 2,
+    cx = w / 2,
+    cy = h / 2,
+    phase = [-1, 0, 1][frame];
+  const leaves = layout.leaves.map((leaf, i) => {
+    const a = leaf.angle + phase * 0.035 * (i % 2 ? 1 : -1),
+      L = R * leaf.len * (1 + phase * 0.015 * (i % 2 ? -1 : 1)),
+      spread = Math.PI / layout.leaves.length;
+    return {
+      ca: Math.cos(a),
+      sa: Math.sin(a),
+      L,
+      Wmax: L * 0.75 * Math.tan(spread) * leaf.width,
+      seed: i * 7 + 3,
+    };
+  });
+  const halfWidth = (u, leaf) => {
+    const { L, Wmax } = leaf,
+      k = u / L;
+    if (k < 0.05 || k > 1) return -1;
+    if (k < 0.7) return Wmax * Math.pow(Math.sin((Math.PI / 2) * (k / 0.7)), 0.7);
+    const t = (k - 0.7) / 0.3;
+    return Wmax * Math.sqrt(Math.max(0, 1 - t * t));
+  };
+  const pb = new PB(w, h);
+  for (let y = 0; y < h; y++)
+    for (let x = 0; x < w; x++) {
+      const px = x + 0.5 - cx,
+        py = (y + 0.5 - cy) / 0.8;
+      for (let li = leaves.length - 1; li >= 0; li--) {
+        const leaf = leaves[li],
+          u = px * leaf.ca + py * leaf.sa,
+          v = -px * leaf.sa + py * leaf.ca,
+          hw = halfWidth(u, leaf);
+        if (hw <= 0) continue;
+        const serr = 1 - 0.07 * hash2(Math.round(u / 2), v > 0 ? 1 : 0, leaf.seed),
+          lim = hw * serr;
+        if (Math.abs(v) > lim) continue;
+        const k = u / leaf.L,
+          av = Math.abs(v),
+          edgePx = lim - av; // расстояние до края в пикселях
+        // Центральная жилка сужается к кончику листа.
+        const midrib = av < Math.max(0.7, 2 * (1 - k)) && k < 0.92;
+        // Боковые прожилки ёлочкой: отходят от центральной вперёд к краю
+        // и слегка изгибаются.
+        const spacing = Math.max(6, leaf.L * 0.13),
+          along = u - av * 0.8 - (av * av) / (leaf.L * 1.2),
+          vein = !midrib && av > 1.5 && edgePx > 1.5 && Math.abs(along / spacing - Math.round(along / spacing)) * spacing < 0.6;
+        // Мелкая сетка между прожилками: светлые короткие перемычки и ячейки.
+        const cu = Math.floor(u / 4),
+          cv = Math.floor(v / 4),
+          cell = hash2(cu, cv, leaf.seed) < 0.45,
+          net = !vein && edgePx > 2 && hash2(cu, cv, leaf.seed + 1) < 0.55 && ((u % 4 + 4) % 4 < 0.9 || (v % 4 + 4) % 4 < 0.9);
+        const shade = 0.85 - k * 0.5 - (av / lim) * 0.25 + (v > 0 ? -0.07 : 0.05) + (cell ? -0.07 : 0);
+        let color;
+        if (edgePx < 1.2) color = "#1f3c12"; // тёмная кромка отделяет листья друг от друга
+        else if (midrib) color = k < 0.35 ? "#e6f4c8" : "#cfe8a2";
+        else if (vein) color = k < 0.45 ? "#c8e89a" : "#a8d27a";
+        else if (net) color = ramp(LEAF_RAMP, shade + 0.22, x, y);
+        else color = ramp(LEAF_RAMP, shade, x, y);
+        pb.set(x, y, color);
+        break;
       }
-    pb.outline("#1c3310");
-    return pb.canvas();
-  }),
-);
+    }
+  pb.outline("#10200a");
+  return { img: pb.canvas(), ax: Math.floor(cx), ay: Math.floor(cy) };
+}
 const GOB_DEF = {
   goblin: {
     head: 5,
