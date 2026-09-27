@@ -15,6 +15,7 @@ const allowed = {
   input: ["input", "data", "shared"],
   render: ["render", "world", "abilities", "systems", "data", "shared"],
   ui: ["ui", "render", "systems", "data", "shared"],
+  audio: ["audio", "data", "shared"],
 };
 let checked = 0;
 for (const folder of ["src", "scripts", "tests"]) {

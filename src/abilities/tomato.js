@@ -32,10 +32,11 @@ export function createTomato(player, enemies, fx, hurt) {
     }
   }
   function land(drop) {
+    fx.sounds.push({ id: "tomatoSplat", x: drop.x, y: drop.y });
     fx.shake = Math.min(6, fx.shake + 2);
     for (const e of enemies)
       if (isHostile(e) && d2(e.x, e.y, drop.x, drop.y) < (drop.r + e.r) ** 2)
-        hurt(e, drop.dmg, e.x - drop.x, e.y - drop.y, B.knockback, { source: "tomato" });
+        hurt(e, drop.dmg, e.x - drop.x, e.y - drop.y, B.knockback, { source: "tomato", sound: null } /* звук — шлепок при падении */);
     puddles.push({ x: drop.x, y: drop.y, R: B.puddleRadius, t: 0, life: B.puddleLife });
     for (let k = 0; k < 16; k++) {
       const a = rand(0, TAU),

@@ -944,3 +944,25 @@ export const BUSHES = [0, 1, 2].map((i) => {
   pb.outline("#050905");
   return pb.canvas();
 });
+
+// Ящик с овощами у костра (лагерь в главном меню): доски и торчащие
+// морковь, капуста и лук.
+export const CRATE = (() => {
+  const w = 26,
+    h = 22,
+    pb = new PB(w, h);
+  const WOOD = ["#2a1a0e", "#4a2e18", "#6e4624", "#8e5e32"];
+  for (let y = 9; y < h - 1; y++)
+    for (let x = 1; x < w - 1; x++) {
+      const plank = (y - 9) % 4 === 3;
+      pb.set(x, y, plank ? WOOD[0] : ramp(WOOD, 0.75 - (x / w) * 0.4 + (hash2(x >> 2, y, 4) - 0.5) * 0.2, x, y));
+    }
+  for (const x of [1, w - 2]) for (let y = 9; y < h - 1; y++) pb.set(x, y, WOOD[1]);
+  pb.outline(OUT);
+  const img = pb.canvas(),
+    g = img.getContext("2d");
+  g.drawImage(ICON.cabbage, 7, 0);
+  g.drawImage(ICON.carrot, 0, 1);
+  g.drawImage(ICON.onion, 14, 1);
+  return { img, ax: 13, ay: h - 2 };
+})();

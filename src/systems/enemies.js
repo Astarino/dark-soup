@@ -74,6 +74,7 @@ export function updateEnemies(
     if (d < e.r + player.r - COMBAT.contactInset && player.iframe <= 0) {
       player.hp -= e.dmg;
       player.iframe = PLAYER.contactGrace;
+      fx.sounds.push({ id: "contactBurn", x: player.x, y: player.y }); // враг врезался и загорелся
       fx.shake = Math.min(8, fx.shake + 5);
       for (const effect of player.contactEffects) applyStatusEffect(e, effect);
       e.kx -= (dx / d) * COMBAT.contactKnockback;

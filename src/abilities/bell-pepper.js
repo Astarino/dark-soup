@@ -20,6 +20,7 @@ export function createBellPepper(player, enemies, fx, hurt) {
     else if (Math.hypot(player.vx, player.vy) > 20)
       base = Math.atan2(player.vy, player.vx);
     else base = rand(0, TAU);
+    fx.sounds.push({ id: "pepperThrow", x: player.x, y: player.y });
     for (let i = 0; i < s.n; i++) {
       const a = base + (i * TAU) / s.n;
       side = -side;

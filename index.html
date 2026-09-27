@@ -6,6 +6,7 @@
 <meta name="theme-color" content="#120d0a">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>Dark Soup</title>
+<link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Play:wght@400;700&display=swap" rel="stylesheet">
@@ -46,9 +47,9 @@
   .panel button:active{box-shadow:0 0 0 3px var(--edge),inset 4px 4px 0 #9a4a18,inset -4px -4px 0 #f7b068}
   .panel button.ghost{background:#2a1e14;color:var(--muted);box-shadow:0 0 0 3px var(--edge),inset -4px -4px 0 #1a120a,inset 4px 4px 0 #4a3624}
   .panel button.small{font-size:9px;padding:12px 14px}
-  #languageChoices{display:flex;justify-content:center;gap:12px;margin:8px 0 20px}
-  #languageChoices button{min-width:100px}
-  #languageChoices button.selected{background:#759542;color:#101308;box-shadow:0 0 0 3px var(--edge),inset -4px -4px 0 #465c27,inset 4px 4px 0 #a8cf67}
+  #languageChoices,#soundChoices{display:flex;justify-content:center;gap:12px;margin:8px 0 20px}
+  #languageChoices button,#soundChoices button{min-width:100px}
+  #languageChoices button.selected,#soundChoices button.selected{background:#759542;color:#101308;box-shadow:0 0 0 3px var(--edge),inset -4px -4px 0 #465c27,inset 4px 4px 0 #a8cf67}
   .catalogSection{margin:18px 0 24px}
   .catalogSection h3{margin:0 0 10px;color:var(--accent);font:10px/1.5 var(--px)}
   .catalogGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
@@ -104,10 +105,6 @@
   .card .tag.new{background:#2d5a1a;color:#bff29a}
   .card .ds{color:var(--muted);font-size:16px;line-height:1.25}
   .card .key{font:8px var(--px);color:#7d6a52}
-  #stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0 8px}
-  #stats div{background:#140e08;padding:10px 6px;box-shadow:inset 0 0 0 2px #2e2016}
-  #stats b{display:block;font:16px/1.4 var(--px);color:#ffe0b0}
-  #stats span{font-size:15px;color:var(--muted)}
   @media (max-width:640px){
     #cards{flex-direction:column;gap:12px}
     .panel .card{flex-direction:row;text-align:left;gap:12px}
@@ -121,6 +118,56 @@
     .bookHeader button,.bookFooter button{font-size:8px}
   }
   @media (min-width:641px){ .card .txt{display:contents} }
+  /* Единые кнопки меню: одинаковый размер и вид */
+  .menuButtons{display:flex;flex-direction:column;gap:12px;margin-top:16px}
+  .menuButtons.two{display:grid;grid-template-columns:1fr 1fr}
+  .menuButtons.two>:last-child:nth-child(odd){grid-column:1/-1}
+  .panel .menuBtn{display:block;width:100%;min-height:50px;margin:0;padding:14px 12px;font:12px/1.2 var(--px)}
+  /* Главное меню поверх живой сцены лагеря */
+  #menu{background:none;justify-content:flex-end;align-items:center;padding:24px max(24px,4vw);transition:opacity .45s}
+  #menu.leaving{opacity:0;pointer-events:none}
+  #menu .panel{width:min(360px,100%);background:rgba(28,20,13,.9)}
+  #menu h1{margin-top:0}
+  @media (max-aspect-ratio:1/1){ #menu{justify-content:center;align-items:flex-end;padding:16px 16px calc(20px + env(safe-area-inset-bottom))} #menu .panel{width:min(420px,100%)} #menu p#menuIntro{display:none} }
+  /* Окна статистики, звука и состояния супа */
+  .panel.info{width:min(760px,100%);max-height:calc(100dvh - 32px);overflow:auto;text-align:left;overscroll-behavior:contain}
+  .panel.info h2{text-align:center}
+  .infoSection{margin:18px 0 6px}
+  .infoSection h3{margin:0 0 10px;color:var(--accent);font:10px/1.5 var(--px)}
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
+  .tile{background:#140e08;padding:10px 8px;box-shadow:inset 0 0 0 2px #2e2016;text-align:center}
+  .tile b{display:block;font:14px/1.5 var(--px);color:#ffe0b0}
+  .tile span{font-size:15px;color:var(--muted)}
+  .rows{display:flex;flex-direction:column;gap:6px}
+  .row{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:10px;align-items:center;background:#211710;padding:6px 10px;box-shadow:inset 0 0 0 2px #33241a}
+  .row canvas,.row .dot{display:block;width:24px;height:24px;image-rendering:pixelated}
+  .row .dot{width:14px;height:14px;margin:5px;box-shadow:0 0 0 2px var(--edge)}
+  .row .name{font-size:16px;color:#f3e6cf;min-width:0}
+  .row .name small{display:block;color:var(--muted);font-size:14px}
+  .row .val{font:10px/1.4 var(--px);color:#ffe0b0;text-align:right;white-space:nowrap}
+  .bar{height:6px;margin-top:4px;background:#0f0a06;box-shadow:inset 0 0 0 1px #3a2a1c}
+  .bar i{display:block;height:100%;background:linear-gradient(#f3a34a,#c05a1e)}
+  .pips{font:9px/1 var(--px);letter-spacing:2px;color:#f0a040}
+  .pips em{color:#4a3624;font-style:normal}
+  .recipeIcons{display:flex;flex-wrap:wrap;gap:8px}
+  .recipeIcons span{position:relative;display:block;width:40px;height:40px;background:#241a10;box-shadow:inset 0 0 0 2px #4e3824}
+  .recipeIcons canvas{position:absolute;inset:4px;width:32px;height:32px;image-rendering:pixelated}
+  .recipeIcons b{position:absolute;right:2px;bottom:1px;font:8px var(--px);color:#ffd98a;text-shadow:1px 1px #000}
+  .badge{display:inline-block;margin:0 auto 8px;padding:6px 10px;font:9px/1.4 var(--px);background:#2d5a1a;color:#bff29a}
+  .emptyNote{text-align:center;color:var(--muted);font-size:17px;margin:24px 0}
+  .slider{display:grid;grid-template-columns:120px 1fr 56px;gap:12px;align-items:center;margin:14px 0}
+  .slider label{font:9px/1.4 var(--px);color:#ffe0b0}
+  .slider output{font:10px var(--px);color:var(--accent);text-align:right}
+  .slider input{-webkit-appearance:none;appearance:none;width:100%;height:12px;background:#0f0a06;box-shadow:0 0 0 3px var(--edge),inset 0 0 0 2px #3a2a1c;outline:none}
+  .slider input::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:24px;background:#d9772b;box-shadow:0 0 0 3px var(--edge),inset -3px -3px 0 #9a4a18,inset 3px 3px 0 #f7b068;cursor:pointer}
+  .slider input::-moz-range-thumb{width:18px;height:24px;border:0;border-radius:0;background:#d9772b;box-shadow:0 0 0 3px var(--edge);cursor:pointer}
+  @media (max-width:640px){ .slider{grid-template-columns:1fr 56px} .slider label{grid-column:1/-1} .menuButtons.two{grid-template-columns:1fr} }
+  /* Таблица уровней в книге рецептов */
+  .bookPage .levels{width:100%;max-width:340px;border-collapse:collapse;font:13px/1.3 var(--body);color:#3b2614}
+  .bookPage .levels th{font:7px/1.4 var(--px);color:#8a431d;text-align:center;padding:3px 2px;border-bottom:2px solid #c99e66}
+  .bookPage .levels td{text-align:center;padding:3px 2px;border-bottom:1px solid #d9bb86}
+  .bookPage .levels td:first-child{font:8px var(--px);color:#76512c}
+  .bookPage .how{font-size:clamp(15px,1.8vw,18px)!important}
 </style>
 </head>
 <body>
@@ -132,9 +179,13 @@
   <div class="panel">
     <h1>DARK SOUP</h1>
     <p id="menuIntro"></p>
+    <div class="menuButtons">
+      <button id="startBtn" class="menuBtn"></button>
+      <button id="statsBtn" class="menuBtn"></button>
+      <button id="menuSoundBtn" class="menuBtn"></button>
+      <button id="menuSettingsBtn" class="menuBtn"></button>
+    </div>
     <p class="hint" id="menuHint"></p>
-    <button id="startBtn"></button>
-    <button id="menuSettingsBtn" class="ghost small"></button>
   </div>
 </div>
 
@@ -147,20 +198,50 @@
 </div>
 
 <div id="pause" class="overlay">
-  <div class="panel">
+  <div class="panel info">
     <h2 id="pauseTitle"></h2>
-    <p id="pauseHint"></p>
-    <button id="resumeBtn"></button>
-    <button id="pauseSettingsBtn" class="ghost small"></button>
-    <button id="quitBtn" class="ghost"></button>
+    <div id="soupState"></div>
+    <div class="menuButtons two">
+      <button id="resumeBtn" class="menuBtn"></button>
+      <button id="pauseSoundBtn" class="menuBtn"></button>
+      <button id="pauseSettingsBtn" class="menuBtn"></button>
+      <button id="quitBtn" class="menuBtn"></button>
+      <button id="pauseMenuBtn" class="menuBtn"></button>
+    </div>
   </div>
 </div>
 
 <div id="over" class="overlay">
-  <div class="panel">
+  <div class="panel info">
     <h2 id="overTitle"></h2>
-    <div id="stats"></div>
-    <button id="restartBtn"></button>
+    <div id="runSummary"></div>
+    <div class="menuButtons two">
+      <button id="restartBtn" class="menuBtn"></button>
+      <button id="overMenuBtn" class="menuBtn"></button>
+    </div>
+  </div>
+</div>
+
+<div id="soundPanel" class="overlay">
+  <div class="panel info">
+    <h2 id="soundTitle"></h2>
+    <div id="soundChoices">
+      <button id="soundOnBtn" class="small"></button>
+      <button id="soundOffBtn" class="small"></button>
+    </div>
+    <div class="slider"><label id="volFireLabel" for="volFire"></label><input id="volFire" type="range" min="0" max="100" step="5"><output id="volFireOut"></output></div>
+    <div class="slider"><label id="volMobsLabel" for="volMobs"></label><input id="volMobs" type="range" min="0" max="100" step="5"><output id="volMobsOut"></output></div>
+    <div class="slider"><label id="volHitsLabel" for="volHits"></label><input id="volHits" type="range" min="0" max="100" step="5"><output id="volHitsOut"></output></div>
+    <p class="hint" id="soundHint" style="text-align:center"></p>
+    <div class="menuButtons"><button id="soundBackBtn" class="menuBtn"></button></div>
+  </div>
+</div>
+
+<div id="statsPanel" class="overlay">
+  <div class="panel info">
+    <h2 id="statsTitle"></h2>
+    <div id="statsContent"></div>
+    <div class="menuButtons"><button id="statsBackBtn" class="menuBtn"></button></div>
   </div>
 </div>
 
@@ -185,7 +266,7 @@
         <span id="recipeCoverHint" class="coverHint"></span>
       </button>
     </div>
-    <div class="settingsActions"><button id="settingsBackBtn" class="ghost"></button></div>
+    <div class="menuButtons"><button id="settingsBackBtn" class="menuBtn"></button></div>
   </div>
 </div>
 

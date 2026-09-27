@@ -1,7 +1,9 @@
 import { rand } from "../shared/math.js";
 import { K } from "../data/balance.js";
 export function createVisualState() {
-  return { parts: [], texts: [], drops: [], shake: 0, steamT: 0 };
+  // sounds — очередь звуковых событий кадра ({ id, x, y }); её забирает
+  // звуковой модуль, в снимки она не попадает.
+  return { parts: [], texts: [], drops: [], shake: 0, steamT: 0, sounds: [] };
 }
 export function createVisualEffects(player, fx) {
   function updateFx(dt) {

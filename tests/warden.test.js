@@ -182,9 +182,10 @@ test("full game: the warden arrives at 5:00 and a wheel turn briefly slows time"
     game.choose(0);
     let boss = null,
       slowSeen = false;
-    for (let f = 0; f < 60 * 330 && game.state !== "over"; f++) {
+    for (let f = 0; f < 60 * 340 && game.state !== "over"; f++) {
       if (game.state === "levelup") game.choose(0);
-      game.step(DT, { x: Math.cos(f / 200), y: Math.sin(f / 200) });
+      // До босса котёл бегает по кругу; после — стоит, чтобы босс подошёл.
+      game.step(DT, f < 60 * 300 ? { x: Math.cos(f / 200), y: Math.sin(f / 200) } : { x: 0, y: 0 });
       if (f % 15) continue; // снимок раз в 15 кадров: замедление длится дольше
       const s = game.snapshot();
       boss = s.enemies.find((e) => e.type === "warden") || boss;

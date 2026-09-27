@@ -12,6 +12,7 @@ export const ENEMY_TYPES = {
 // Страж Колеса — босс на 5-й минуте. Все числа — стартовый баланс.
 export const WARDEN = {
   spawnAt: 300,
+  spawnMargin: 320, // не появляться в стене деревьев по краю карты
   hpPerIngredient: 10000, // × число ингредиентов игрока с уровнем ≥ rankForHp
   rankForHp: 3,
   minIngredients: 1, // если таких ингредиентов нет, всё равно 10 000

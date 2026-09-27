@@ -45,6 +45,7 @@ export function createPotato(player, enemies, fx, hurt) {
     return true;
   }
   function split(shot, struck) {
+    fx.sounds.push({ id: "potatoBurst", x: shot.x, y: shot.y });
     const base = Math.atan2(shot.vy, shot.vx),
       n = shot.pellets;
     for (let i = 0; i < n; i++) {
@@ -96,6 +97,10 @@ export function createPotato(player, enemies, fx, hurt) {
         shot.y = player.y;
         continue;
       }
+      if (!shot.launched) {
+        shot.launched = true;
+        if (shot.kind === "potato") fx.sounds.push({ id: "potatoFire", x: player.x, y: player.y });
+      }
       shot.x += shot.vx * dt;
       shot.y += shot.vy * dt;
       shot.travelled += Math.hypot(shot.vx, shot.vy) * dt;
@@ -106,7 +111,7 @@ export function createPotato(player, enemies, fx, hurt) {
         if (shot.kind === "potato") {
           hurt(e, shot.dmg, shot.vx, shot.vy, B.knockback, { source: "potato" });
           split(shot, e);
-        } else hurt(e, shot.dmg, shot.vx, shot.vy, B.pelletKnockback, { source: "potato" });
+        } else hurt(e, shot.dmg, shot.vx, shot.vy, B.pelletKnockback, { source: "potato", sound: "pellet" });
         break;
       }
       if (shot.travelled >= shot.range) shot.done = true;

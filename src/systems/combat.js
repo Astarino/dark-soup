@@ -1,12 +1,12 @@
 import { COMBAT, WARDEN } from "../data/balance.js";
 import { rand } from "../shared/math.js";
-export function createCombat(player, gems, fx, onKill) {
+export function createCombat(player, gems, fx, onKill, onDamage = () => {}) {
   function damageEnemy(e, dmg) {
     if (e.dead) return;
     e.hp -= dmg;
     if (e.hp <= 0) {
       e.dead = true;
-      onKill();
+      onKill(e);
       gems.push({
         x: e.x,
         y: e.y,
@@ -38,7 +38,7 @@ export function createCombat(player, gems, fx, onKill) {
   // source — id способности супа. Страж Колеса считает урон по источникам и,
   // освоив способность, получает от неё в 5 раз меньше урона без побочных
   // эффектов (вспышки с торможением и отброса).
-  function hurt(e, dmg, forceX, forceY, kb, { quiet = false, source = null } = {}) {
+  function hurt(e, dmg, forceX, forceY, kb, { quiet = false, source = null, sound = source } = {}) {
     if (e.dead || e.charm > 0) return; // обращённые свёклой — союзники котла
     const adapted = !!(source && e.adapted && e.adapted.includes(source));
     dmg = Math.max(
@@ -63,6 +63,7 @@ export function createCombat(player, gems, fx, onKill) {
       e.kx += (forceX / d) * k;
       e.ky += (forceY / d) * k;
     }
+    if (sound) fx.sounds.push({ id: `hit_${sound}`, x: e.x, y: e.y });
     if (source && e.dmgWindow) {
       e.dmgWindow[source] = (e.dmgWindow[source] || 0) + dmg;
       e.sinceAdapt += dmg;
@@ -77,6 +78,7 @@ export function createCombat(player, gems, fx, onKill) {
       col: adapted ? "#9a9488" : "#fff3d6",
       size: 8,
     });
+    if (source) onDamage(source, Math.min(dmg, Math.max(0, e.hp)));
     damageEnemy(e, dmg);
   }
   return { damageEnemy, hurt };

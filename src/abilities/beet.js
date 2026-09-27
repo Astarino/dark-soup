@@ -24,10 +24,12 @@ export function createBeet(player, enemies, fx, hurt, viewport) {
         if (placed.every((p) => d2(p.x, p.y, x, y) >= (B.minSeparation * s.R) ** 2)) break;
       }
       placed.push({ x, y });
+      fx.sounds.push({ id: "beetPool", x, y });
       pools.push({ x, y, r: s.R, dur: s.dur, t: 0, life: B.poolLife });
     }
   }
   function charm(e, pool) {
+    fx.sounds.push({ id: "charm", x: e.x, y: e.y });
     e.charm = pool.dur;
     e.atk = 0;
     for (let k = 0; k < 8; k++)

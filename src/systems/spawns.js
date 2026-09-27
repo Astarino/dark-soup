@@ -69,6 +69,7 @@ export function createSpawns(
     hordeT -= dt;
     if (hordeT <= 0) {
       hordeT = SPAWNS.hordeInterval;
+      fx.sounds.push({ id: "horde", x: player.x, y: player.y });
       const n = 14 + Math.floor(clock.time / 10),
         R = Math.hypot(VW(), VH()) / 2 + 40;
       for (let i = 0; i < n; i++) {

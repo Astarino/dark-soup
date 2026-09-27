@@ -1,6 +1,6 @@
 import { UPG, HEAL } from "../systems/upgrades.js";
 import { ICON } from "../render/sprites.js";
-import { describeUpgrade } from "./descriptions.js";
+import { describeUpgrade, levelTable } from "./descriptions.js";
 export function createRecipeBook(tr) {
   const $ = (id) => document.getElementById(id);
   const RECIPES = [...UPG, HEAL];
@@ -41,7 +41,14 @@ export function createRecipeBook(tr) {
         : u.kind === "pas"
           ? tr("seasoning")
           : tr("recovery");
-    element.innerHTML = `<span class="pageNumber">${String(index + 1).padStart(2, "0")}</span><canvas class="pageIcon" width="12" height="12" aria-hidden="true"></canvas><span class="pageCategory">${kind}</span><h3>${tr(u.name)}</h3><p>${describeUpgrade(u, 0, tr)}</p><span class="pageRank">${tr("maxRank")}: ${u.max === 99 ? "∞" : u.max}</span>`;
+    // Как на карточке выбора: описание, затем характеристики на каждом уровне.
+    const table = levelTable(u, tr),
+      tableHtml = table
+        ? `<table class="levels"><thead><tr>${table.head.map((h) => `<th>${h}</th>`).join("")}</tr></thead><tbody>${table.rows
+            .map((r) => `<tr>${r.map((c) => `<td>${c}</td>`).join("")}</tr>`)
+            .join("")}</tbody></table>`
+        : "";
+    element.innerHTML = `<span class="pageNumber">${String(index + 1).padStart(2, "0")}</span><canvas class="pageIcon" width="12" height="12" aria-hidden="true"></canvas><span class="pageCategory">${kind}</span><h3>${tr(u.name)}</h3><p class="how">${describeUpgrade(u, 0, tr)}</p>${tableHtml}<span class="pageRank">${tr("maxRank")}: ${u.max === 99 ? "∞" : u.max}</span>`;
     element
       .querySelector("canvas")
       .getContext("2d")

@@ -22,7 +22,9 @@
     key(code, false);
   };
   click("startBtn");
-  assert(state().state === "levelup", "initial choice");
+  assert(state().state === "intro", "camera glide from the camp");
+  for (let i = 0; i < 300 && state().state === "intro"; i++) await frames(1);
+  assert(state().state === "levelup", "initial choice after the glide");
   press("Digit1");
   assert(state().state === "play", "keyboard choice");
   let x = state().player.x;
@@ -114,15 +116,33 @@
   click("ruBtn");
   click("recipeBookBtn");
   const counter = document.getElementById("bookCounter").textContent;
-  const expected = matchMedia("(max-width:640px)").matches ? "1 / 8" : "1 / 4";
+  const recipes = 12; // 11 улучшений + «Глоток супа»
+  const expected = matchMedia("(max-width:640px)").matches ? `1 / ${recipes}` : `1 / ${recipes / 2}`;
   assert(counter.endsWith(expected), "responsive recipe pagination");
   assert(state().state === "pause", "settings and book preserve pause");
+  press("Escape");
+  press("Escape");
+  // Звук: шкалы сохраняются по категориям.
+  click("pauseSoundBtn");
+  const fire = document.getElementById("volFire");
+  fire.value = 40;
+  fire.dispatchEvent(new Event("input"));
+  fire.dispatchEvent(new Event("change"));
+  assert(JSON.parse(localStorage.getItem("dark_soup_volume")).fire === 40, "fire volume saved");
+  click("soundBackBtn");
+  assert(document.getElementById("soupState").textContent.length > 0, "soup state in pause");
+  // Главное меню и статистика.
+  click("pauseMenuBtn");
+  assert(state().state === "menu", "back to the main menu");
+  click("statsBtn");
+  assert(document.getElementById("statsPanel").classList.contains("show"), "statistics panel");
+  click("statsBackBtn");
   return {
     passed: true,
     width: innerWidth,
     counter,
     state: state().state,
     checks:
-      "keyboard, pointer, pause, resume, restart, languages, persistence, settings, recipes",
+      "intro, keyboard, pointer, pause, soup state, resume, restart, languages, persistence, settings, recipes, sound, statistics, main menu",
   };
 })();

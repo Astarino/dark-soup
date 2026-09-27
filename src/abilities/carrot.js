@@ -61,6 +61,7 @@ export function carrot(player, enemies, strikes, fx, hurt, dt) {
     if (!s.hit && s.t >= s.fall) {
       s.hit = true;
       fx.shake = Math.min(6, fx.shake + 2);
+      fx.sounds.push({ id: "carrotLand", x: s.x, y: s.y });
       for (const e of enemies)
         if (d2(e.x, e.y, s.x, s.y) < (s.r + e.r) ** 2)
           hurt(
@@ -69,7 +70,7 @@ export function carrot(player, enemies, strikes, fx, hurt, dt) {
             e.x - s.x,
             e.y - s.y,
             ABILITY_BEHAVIOR.carrot.knockback,
-            { source: "carrot" },
+            { source: "carrot", sound: null }, // звук — удар о землю
           );
       for (let k = 0; k < s.sparks; k++) {
         const a = rand(0, TAU),

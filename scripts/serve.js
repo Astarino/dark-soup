@@ -13,6 +13,7 @@ const mime = {
   ".json": "application/json",
   ".png": "image/png",
   ".svg": "image/svg+xml",
+  ".mp3": "audio/mpeg",
 };
 const server = createServer(async (request, response) => {
   try {

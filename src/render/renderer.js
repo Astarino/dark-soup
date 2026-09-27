@@ -161,29 +161,71 @@ export function createRenderer(cvs, world, tr) {
       ctx.drawImage(s.img, X - s.ax, Y - s.ay);
       ctx.globalAlpha = 1;
     }
+    // Горящий враг: несколько языков пламени разной высоты с градиентом
+    // (белое ядро → жёлтый → оранжевый → красный), рваные кончики, жар у
+    // основания, тёмный дымок и искры. Кадры по 14 в секунду — пиксельно.
     function drawBurning(e, fr, X, Y) {
-      const phase = Math.floor(time * 13) + Math.floor(e.anim);
-      const base = Y - Math.max(4, Math.round(fr.ay * 0.16));
-      const spread = Math.max(5, Math.round(fr.w * 0.28));
-      for (let i = 0; i < 5; i++) {
-        const h = Math.round(fr.ay * 0.28) + 4 + ((phase + i * 7) % 6);
-        const root = X + Math.round((i - 2) * spread * 0.5);
+      const seed = (e.max * 7.13 + e.spd * 3.7) % 10,
+        t = Math.floor(time * 14) / 14 + seed,
+        H = fr.ay,
+        W = Math.max(8, Math.round(fr.w * 0.46)),
+        base = Y - Math.round(H * 0.08),
+        N = e.type === "brute" ? 7 : 5,
+        noise = (a, b) => (Math.sin(t * a + b) + Math.sin(t * a * 0.63 + b * 1.7)) * 0.25 + 0.5;
+      pEll(X, base - 2, W * 0.55, 3, "rgba(255,150,50,.35)");
+      for (let i = 0; i < 3; i++) {
+        const k = (time * 0.9 + i * 0.33 + seed * 0.1) % 1;
+        pRect(
+          X - 1 + Math.round(Math.sin(i * 2.1 + time * 2) * 3),
+          Math.round(base - H * (0.72 + k * 0.5)),
+          2,
+          2,
+          `rgba(40,32,28,${0.5 * (1 - k)})`,
+        );
+      }
+      for (let i = 0; i < N; i++) {
+        const u = i / (N - 1) - 0.5,
+          cx = X + Math.round(u * W),
+          h = Math.max(3, Math.round(H * (0.3 + 0.45 * noise(9, i * 1.9 + seed)) * (1 - Math.abs(u) * 0.8))),
+          maxW = Math.abs(u) < 0.3 ? 4 : 3;
         for (let y = 0; y < h; y++) {
-          const tip = y / h,
-            sway = Math.round(
-              Math.sin(phase * 0.7 + i * 2 + y * 0.5) * tip * 2,
-            );
-          const width = tip < 0.35 ? 3 : tip < 0.75 ? 2 : 1;
-          const color =
-            tip > 0.8 ? "#ffca55" : (i + y + phase) % 4 ? "#ee7620" : "#ffd36a";
-          pRect(root + sway - Math.floor(width / 2), base - y, width, 1, color);
+          const k = y / h;
+          if (k > 0.8 && (y + i + Math.floor(t * 14)) % 2) continue; // рваные кончики
+          const w = Math.max(1, Math.round(maxW * Math.pow(1 - k, 0.7))),
+            sway = Math.round(Math.sin(t * 7 + i * 1.3 + y * 0.45) * 1.6 * k),
+            c = k < 0.22 ? "#fff4c0" : k < 0.45 ? "#ffd24a" : k < 0.7 ? "#ff8a1e" : k < 0.88 ? "#e2481a" : "#8a1e0c";
+          pRect(cx + sway - (w >> 1), base - y, w, 1, c);
         }
       }
-      for (let i = 0; i < 3; i++) {
-        const x = X + ((phase * (i + 2) + i * 13) % (spread * 2 + 1)) - spread;
-        const y = base - Math.round(fr.ay * 0.35) - ((phase + i * 5) % 9);
-        pRect(x, y, 1, 1, i === 0 ? "#fff0a0" : "#ffad3a");
+      for (let i = 0; i < 4; i++) {
+        const k = (time * (1.2 + i * 0.3) + i * 0.27 + seed * 0.1) % 1;
+        if (k < 0.85)
+          pRect(
+            X + Math.round(Math.sin(i * 3.7 + time * 3 + seed) * W * 0.6),
+            Math.round(base - H * 0.45 - k * H * 0.7),
+            1,
+            1,
+            k < 0.4 ? "#fff0a0" : "#ff9a3a",
+          );
       }
+    }
+    // После слоя темноты: горящие враги светятся в ночи, как маленькие костры.
+    function drawBurningGlows() {
+      ctx.globalCompositeOperation = "lighter";
+      for (const e of enemies) {
+        if (!e.effects.burning || e.type === "warden") continue;
+        const X = sx(e.x),
+          Y = sy(e.y) - 10;
+        if (X < -40 || X > LW + 40 || Y < -40 || Y > LH + 40) continue;
+        const fl = 1 + ((Math.floor(time * 10 + e.max) % 3) - 1) * 0.08,
+          r = (e.type === "brute" ? 30 : 20) * fl,
+          g = ctx.createRadialGradient(X, Y, 0, X, Y, r);
+        for (const [st, a] of [[0, 0.24], [0.35, 0.24], [0.35, 0.13], [0.7, 0.13], [0.7, 0.05], [1, 0.05], [1, 0]])
+          g.addColorStop(st, `rgba(255,120,40,${a})`);
+        ctx.fillStyle = g;
+        ctx.fillRect(X - r, Y - r, r * 2, r * 2);
+      }
+      ctx.globalCompositeOperation = "source-over";
     }
     function drawGoblin(e) {
       // Обращённые свёклой — в свекольных тонах; перед концом обращения мигают.
@@ -317,6 +359,10 @@ export function createRenderer(cvs, world, tr) {
       const SX = X,
         SY = Y + POT.soupDy - bob;
       const items = [];
+      // В главном меню суп уже варится: в котле плавают овощи из ящика.
+      const cooking = state === "menu" || state === "intro";
+      if (cooking)
+        items.push(["#f08a2a", "#ffb04a"], ["#6fae3f", "#a6d86a"], ["#e8c890", "#fff0c8"], ["#f08a2a", "#ffb04a"], ["#6fae3f", "#a6d86a"]);
       for (let k = 0; k < Math.min(3, player.lv.carrot); k++)
         items.push(["#f08a2a", "#ffb04a"]);
       for (let k = 0; k < Math.min(3, player.lv.cabbage); k++)
@@ -785,6 +831,7 @@ export function createRenderer(cvs, world, tr) {
       }
       drawEffectsAir();
       drawLighting();
+      drawBurningGlows();
       if (slowmo > 0) {
         // щелчок колеса: мягкая золотистая вспышка по краям
         ctx.fillStyle = `rgba(240,224,168,${Math.min(0.25, slowmo * 0.4)})`;
@@ -793,7 +840,7 @@ export function createRenderer(cvs, world, tr) {
         ctx.fillRect(0, 0, 3, LH);
         ctx.fillRect(LW - 3, 0, 3, LH);
       }
-      if (state !== "menu") drawHUD();
+      if (state !== "menu" && state !== "intro") drawHUD();
       if (
         player.hp / player.maxHp < 0.3 &&
         state === "play" &&

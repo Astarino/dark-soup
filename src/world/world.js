@@ -153,6 +153,12 @@ export function createWorld() {
         addCollider(x, y - 6, s.width * 0.8);
       }
     }
+    // Лагерь из главного меню: дерево у костра и ящик с овощами.
+    // Добавлены в конце без случайности, чтобы не сдвигать остальной лес.
+    trees.push({ kind: "tree", x: CX - 330, y: CY + 30, spr: { family: "OAKS_B", index: 2 } });
+    addCollider(CX - 330, CY + 26, 11);
+    props.push({ kind: "spr", x: CX + 80, y: CY + 75, s: { family: "CRATE" } });
+    addCollider(CX + 80, CY + 70, 16);
   })();
 
   return { trees, props, pushOut };

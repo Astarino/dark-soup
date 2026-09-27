@@ -31,6 +31,7 @@ export function createExperience(player, gems, fx) {
       player.lvl++;
       player.need = needFor(player.lvl);
       player.pending++;
+      fx.sounds.push({ id: "levelUp", x: player.x, y: player.y });
       for (let k = 0; k < 20; k++) {
         const a = (k / 20) * TAU;
         fx.parts.push({

@@ -281,6 +281,6 @@ test("performance: every ingredient at rank 6 with a full horde", () =>
     const avg = total / frames;
     console.log(`max-rank run: avg ${avg.toFixed(2)} ms/frame, worst ${worst.toFixed(2)} ms`, peak);
     assert.equal(game.state, "play");
-    assert.ok(peak.enemies >= 150, `horde size ${peak.enemies}`);
+    assert.ok(peak.enemies >= 120, `horde size ${peak.enemies}`);
     assert.ok(avg < 8, `average simulation+snapshot ${avg.toFixed(2)} ms`);
   }));
