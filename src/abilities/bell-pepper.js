@@ -70,7 +70,7 @@ export function createBellPepper(player, enemies, fx, hurt) {
       seen.add(e);
       const dmg = Math.max(1, Math.round(B.hits[slice.hits] * slice.mul));
       slice.hits++;
-      hurt(e, dmg, e.x - slice.x, e.y - slice.y, B.knockback);
+      hurt(e, dmg, e.x - slice.x, e.y - slice.y, B.knockback, { source: "bellPepper" });
     }
   }
   function update(dt) {

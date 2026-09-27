@@ -35,7 +35,7 @@ export function createTomato(player, enemies, fx, hurt) {
     fx.shake = Math.min(6, fx.shake + 2);
     for (const e of enemies)
       if (isHostile(e) && d2(e.x, e.y, drop.x, drop.y) < (drop.r + e.r) ** 2)
-        hurt(e, drop.dmg, e.x - drop.x, e.y - drop.y, B.knockback);
+        hurt(e, drop.dmg, e.x - drop.x, e.y - drop.y, B.knockback, { source: "tomato" });
     puddles.push({ x: drop.x, y: drop.y, R: B.puddleRadius, t: 0, life: B.puddleLife });
     for (let k = 0; k < 16; k++) {
       const a = rand(0, TAU),
@@ -79,7 +79,7 @@ export function createTomato(player, enemies, fx, hurt) {
     puddles.splice(0, puddles.length, ...puddles.filter((p) => p.t < p.life));
   }
   function speedFactor(e) {
-    if (e.charm > 0) return 1;
+    if (e.charm > 0 || (e.adapted && e.adapted.includes("tomato"))) return 1;
     for (const p of puddles) {
       const r = radiusOf(p);
       if (d2(e.x, e.y, p.x, p.y) < r * r) return 1 - B.slow;

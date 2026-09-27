@@ -69,6 +69,7 @@ export function carrot(player, enemies, strikes, fx, hurt, dt) {
             e.x - s.x,
             e.y - s.y,
             ABILITY_BEHAVIOR.carrot.knockback,
+            { source: "carrot" },
           );
       for (let k = 0; k < s.sparks; k++) {
         const a = rand(0, TAU),

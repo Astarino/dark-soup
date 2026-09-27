@@ -14,6 +14,8 @@ import {
   UPG,
 } from "../systems/upgrades.js";
 import { createAbilities } from "../abilities/registry.js";
+import { createWarden } from "../systems/warden.js";
+import { WARDEN } from "../data/balance.js";
 import { createStatusSystem } from "../effects/status.js";
 import {
   createVisualState,
@@ -41,6 +43,8 @@ export function createGame(
     abilities,
     experience,
     visuals,
+    warden,
+    slowmo = 0,
     kills;
   const viewport = { width: 1200, height: 800 };
   function reset() {
@@ -67,6 +71,13 @@ export function createGame(
       viewport,
     );
     experience = createExperience(player, gems, fx);
+    slowmo = 0;
+    warden = createWarden(player, enemies, clock, fx, spawns.edgePos, {
+      translate,
+      onAdapt: () => {
+        slowmo = WARDEN.adaptSlowmo.duration; // щелчок колеса: игра на миг замедляется
+      },
+    });
     visuals = createVisualEffects(player, fx);
   }
   function levelUp(first) {
@@ -111,6 +122,10 @@ export function createGame(
       return;
     }
     if (state !== "play") return;
+    if (slowmo > 0) {
+      slowmo -= dt;
+      dt *= WARDEN.adaptSlowmo.scale;
+    }
     clock.time += dt;
     movePlayer(player, direction, dt, world.pushOut);
     // Order is gameplay: contact/burning precede abilities; death beats a level-up.
@@ -119,9 +134,12 @@ export function createGame(
       pushOut: world.pushOut,
       edgePos: spawns.edgePos,
       ...statuses,
-      ...abilities.enemyHooks,
+      speedFactor: abilities.enemyHooks.speedFactor,
+      control: (e, t, slow) =>
+        abilities.enemyHooks.control(e, t, slow) || warden.control(e, t, slow),
     });
     abilities.update(dt);
+    warden.update(dt);
     experience.updateGems(dt);
     visuals.updateFx(dt);
     followPlayer(cam, player, dt);
@@ -159,6 +177,7 @@ export function createGame(
         ...fx,
         strikes: abilities.strikes,
         ...abilities.view(),
+        ...(slowmo > 0 ? { slowmo } : {}),
       }),
   });
 }

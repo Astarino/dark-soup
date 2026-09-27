@@ -2,8 +2,11 @@ import { clamp, lerp } from "../shared/math.js";
 import { WORLD } from "../data/balance.js";
 export function movePlayer(player, v, dt, pushOut) {
   const f = 1 - Math.exp(-12 * dt);
-  player.vx = lerp(player.vx, v.x * player.speed, f);
-  player.vy = lerp(player.vy, v.y * player.speed, f);
+  // Гравитация Стража Колеса временно замедляет котёл.
+  const speed = player.slowT > 0 ? player.speed * player.slowMul : player.speed;
+  if (player.slowT > 0) player.slowT -= dt;
+  player.vx = lerp(player.vx, v.x * speed, f);
+  player.vy = lerp(player.vy, v.y * speed, f);
   player.x += player.vx * dt;
   player.y += player.vy * dt;
   pushOut(player);

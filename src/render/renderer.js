@@ -1,5 +1,11 @@
 import { TAU, clamp, rand, fmtTime } from "../shared/math.js";
-import { K, ABILITY_STATS } from "../data/balance.js";
+import { K, ABILITY_STATS, WARDEN } from "../data/balance.js";
+import {
+  WARDEN_SPR,
+  WARDEN_WHEEL,
+  WARDEN_WHEEL_STEPS,
+  WARDEN_WHEEL_ANCHOR,
+} from "./warden-sprites.js";
 import { PFONT, OUT } from "./style.js";
 import {
   ICON,
@@ -57,7 +63,9 @@ export function createRenderer(cvs, world, tr) {
       tomatoPuddles = [],
       pepperSlices = [],
       cooldowns = {},
+      slowmo = 0,
     } = snapshot;
+    const boss = enemies.find((e) => e.type === "warden");
     const { W, H, DPR, PX, LW, LH, SAFE } = view;
     const orbitBalls = (offset = 0) => onionBalls(player, time, offset);
     if (time < cabbage.lastTime - 1e-6 || !(player.lv.cabbage > 0)) cabbage.layout = null;
@@ -209,6 +217,60 @@ export function createRenderer(cvs, world, tr) {
         );
       }
     }
+    // Страж Колеса: поза по состоянию, колесо поверх тела (задние шары — позади).
+    function wardenFrame(e) {
+      if (e.state === "windup") return WARDEN_SPR.windup[e.stateT > WARDEN.slash.windup / 2 ? 0 : 1];
+      if (e.state === "strike") return WARDEN_SPR.strike[e.stateT > WARDEN.slash.recover / 2 ? 0 : 1];
+      if (e.state === "cast") return WARDEN_SPR.cast[Math.floor(time * 8) % 2];
+      return WARDEN_SPR.walk[Math.floor(e.anim * 1.8) % 6];
+    }
+    function drawWarden(e) {
+      const fr = wardenFrame(e),
+        X = sx(e.x),
+        Y = sy(e.y);
+      pEll(X, Y, 16, 4, "rgba(0,0,0,.45)");
+      // Колесо: доворачивается на 45° за wheelAnim, с подсветкой шаров.
+      const k = e.wheelAnim / WARDEN.wheelTurnTime,
+        ease = k * k * (3 - 2 * k),
+        turn = e.wheelSteps - ease,
+        idx = Math.round((turn - Math.floor(turn)) * WARDEN_WHEEL_STEPS) % WARDEN_WHEEL_STEPS,
+        wheel = WARDEN_WHEEL[e.wheelAnim > 0 ? 1 : 0][idx],
+        [wax, way] = WARDEN_WHEEL_ANCHOR,
+        wY = Y + fr.wheelDy - way;
+      ctx.drawImage(wheel.back, X - wax, wY);
+      const fl = e.flash > 0.06, // только начало вспышки: по боссу бьют почти всегда
+        charmed = e.charm > 0,
+        img = e.face > 0 ? (fl ? fr.rw : charmed ? fr.rc : fr.r) : fl ? fr.lw : charmed ? fr.lc : fr.l,
+        ax = e.face > 0 ? fr.ax : fr.w - 1 - fr.ax;
+      ctx.drawImage(img, X - ax, Y - fr.ay);
+      ctx.drawImage(wheel.front, X - wax, wY);
+    }
+    function drawWardenEffects(e) {
+      const X = sx(e.x),
+        Y = sy(e.y);
+      if (e.state === "cast") {
+        const k = 1 - Math.max(0, e.stateT) / WARDEN.gravity.windup,
+          r = WARDEN.gravity.radius / K;
+        pRing(X, Y, r, r * 0.8, `rgba(150,90,220,${0.25 + 0.45 * k})`, 3, Math.floor(time * 12));
+        pRing(X, Y, r * k, r * k * 0.8, "rgba(20,8,40,.55)");
+      }
+      if (e.state === "windup") {
+        const k = 1 - Math.max(0, e.stateT) / WARDEN.slash.windup,
+          r = (WARDEN.slash.reach + 22) / K;
+        pRing(X, Y, r, r * 0.8, `rgba(255,60,50,${0.3 + 0.6 * k})`, 2, Math.floor(time * 16));
+      }
+      if (e.state === "strike") {
+        // белая дуга удара клинком в сторону взгляда
+        const k = 1 - Math.max(0, e.stateT) / WARDEN.slash.recover,
+          r = (WARDEN.slash.reach + 10) / K;
+        ctx.fillStyle = `rgba(245,240,225,${0.9 * (1 - k)})`;
+        for (let a = -1.1; a <= 1.1; a += 0.04) {
+          const ang = (e.face > 0 ? 0 : Math.PI) + a * (e.face > 0 ? 1 : -1);
+          for (const rr of [r, r - 1, r - 2])
+            ctx.fillRect(Math.round(X + Math.cos(ang) * rr), Math.round(Y - 12 + Math.sin(ang) * rr * 0.8), 1, 1);
+        }
+      }
+    }
     function drawFire(X, Y) {
       const t = Math.floor(time * 12) / 12;
       for (let x = -7; x <= 7; x++) {
@@ -237,8 +299,10 @@ export function createRenderer(cvs, world, tr) {
       }
     }
     function drawPot() {
-      const X = sx(player.x),
-        Y = sy(player.y),
+      // Под гравитацией котёл мелко дёргается.
+      const jitter = player.slowT > 0 && state === "play" ? Math.round(rand(-1, 1)) : 0;
+      const X = sx(player.x) + jitter,
+        Y = sy(player.y) + (player.slowT > 0 && state === "play" ? Math.round(rand(0, 1)) : 0),
         dead = state === "over";
       const bob =
         Math.hypot(player.vx, player.vy) > 20
@@ -422,9 +486,21 @@ export function createRenderer(cvs, world, tr) {
       }
     }
     function drawEffectsAir() {
+      if (boss) drawWardenEffects(boss);
+      if (player.slowT > 0 && state === "play") {
+        const X = sx(player.x),
+          Y = sy(player.y) - 12;
+        pRing(X, Y + 12, 20, 6, "rgba(120,70,200,.45)", 2, Math.floor(time * 10));
+        for (let i = 0; i < 10; i++) {
+          const a = i * 0.63 + time * 2.2,
+            r = 22 - ((time * 18 + i * 5) % 20);
+          pRect(Math.round(X + Math.cos(a) * r), Math.round(Y + Math.sin(a) * r * 0.6), 1, 1, i % 2 ? "#2a1440" : "#8a5ad0");
+        }
+      }
       for (const e of enemies)
         if (
           e.effects.burning &&
+          e.type !== "warden" &&
           e.x > (camL - 40) * K &&
           e.x < (camL + LW + 40) * K &&
           e.y > (camT - 40) * K &&
@@ -619,6 +695,8 @@ export function createRenderer(cvs, world, tr) {
         if (u.id === "carrot")
           cdk = clamp(player.cd.carrot / ABILITY_STATS.carrot(lv).cd, 0, 1);
         if (u.id in cooldowns) cdk = cooldowns[u.id];
+        // Освоено Стражем Колеса: значок перечёркнут.
+        if (boss && boss.adapted.includes(u.id)) pRect(ix + 1, iy + 7, 14, 2, "#f0e0a8");
         if (cdk > 0)
           pRect(ix + 1, iy + 1, 14, Math.round(14 * cdk), "rgba(0,0,0,.6)");
         ptext(String(lv), ix + 11, iy + 10, "#ffd98a");
@@ -627,6 +705,29 @@ export function createRenderer(cvs, world, tr) {
           ix = left;
           iy += 18;
         }
+      }
+      if (boss && state !== "menu") {
+        const bw = Math.min(160, Math.round(LW * 0.6)),
+          bx = Math.round((LW - bw) / 2),
+          by = LH - Math.round(SAFE.b * s) - 26; // внизу: сверху значки ингредиентов
+        ptext(tr("mob_warden"), LW / 2, by - 10, "#ece8da", 8, "center");
+        pRect(bx - 1, by - 1, bw + 2, 7, OUT);
+        pRect(bx, by, bw, 5, "#2a0a10");
+        pRect(bx, by, Math.round((bw * Math.max(0, boss.hp)) / boss.max), 5, "#b0182a");
+        pRect(bx, by, Math.round((bw * Math.max(0, boss.hp)) / boss.max), 1, "#ff6a6a");
+        // деления по 5000 урона — щелчки колеса
+        for (let d = WARDEN.adaptEvery; d < boss.max; d += WARDEN.adaptEvery) {
+          const tx = bx + Math.round((bw * (boss.max - d)) / boss.max);
+          pRect(tx, by, 1, 5, "rgba(0,0,0,.55)");
+        }
+        boss.adapted.forEach((id, i) => {
+          const ix2 = Math.round(LW / 2 - (boss.adapted.length * 14) / 2 + i * 14);
+          pRect(ix2, by + 8, 13, 13, OUT);
+          pRect(ix2 + 1, by + 9, 11, 11, "#3a2e18");
+          ctx.globalAlpha = 0.6;
+          ctx.drawImage(ICON[id], ix2 + 1, by + 9, 11, 11);
+          ctx.globalAlpha = 1;
+        });
       }
       if (joy.active && state === "play") {
         const k = DPR / PX,
@@ -679,10 +780,19 @@ export function createRenderer(cvs, world, tr) {
         if (o === player) drawPot();
         else if (o.kind === "tree") drawTree(o);
         else if (o.kind === "spr") blit(o.s.img, o.x, o.y, o.s.ax, o.s.ay);
+        else if (o.type === "warden") drawWarden(o);
         else drawGoblin(o);
       }
       drawEffectsAir();
       drawLighting();
+      if (slowmo > 0) {
+        // щелчок колеса: мягкая золотистая вспышка по краям
+        ctx.fillStyle = `rgba(240,224,168,${Math.min(0.25, slowmo * 0.4)})`;
+        ctx.fillRect(0, 0, LW, 3);
+        ctx.fillRect(0, LH - 3, LW, 3);
+        ctx.fillRect(0, 0, 3, LH);
+        ctx.fillRect(LW - 3, 0, 3, LH);
+      }
       if (state !== "menu") drawHUD();
       if (
         player.hp / player.maxHp < 0.3 &&

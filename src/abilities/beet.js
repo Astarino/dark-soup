@@ -61,7 +61,7 @@ export function createBeet(player, enemies, fx, hurt, viewport) {
       if (pool.t >= pool.life) continue;
       for (const e of enemies) {
         if (charmed >= limit) break;
-        if (e.dead || e.charm > 0) continue;
+        if (e.dead || e.charm > 0 || (e.adapted && e.adapted.includes("beet"))) continue;
         if (d2(e.x, e.y, pool.x, pool.y) < pool.r * pool.r) {
           charm(e, pool);
           charmed++;
@@ -93,7 +93,7 @@ export function createBeet(player, enemies, fx, hurt, viewport) {
     e.face = dx >= 0 ? 1 : -1;
     if (target && d <= e.r + target.r + 2 && e.atk <= 0) {
       e.atk = B.attackInterval;
-      hurt(target, e.dmg, dx, dy, B.attackKnockback);
+      hurt(target, e.dmg, dx, dy, B.attackKnockback, { source: "beet" });
     }
     return true;
   }

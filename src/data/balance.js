@@ -6,6 +6,22 @@ export const ENEMY_TYPES = {
   goblin: { hp: 22, spd: 72, dmg: 8, r: 14, xp: 1 },
   runner: { hp: 12, spd: 118, dmg: 6, r: 11, xp: 1 },
   brute: { hp: 110, spd: 50, dmg: 18, r: 24, xp: 6 },
+  // Босс: здоровье считается при появлении (см. WARDEN), тут — за один ингредиент.
+  warden: { hp: 10000, spd: 55, dmg: 30, r: 30, xp: 60 },
+};
+// Страж Колеса — босс на 5-й минуте. Все числа — стартовый баланс.
+export const WARDEN = {
+  spawnAt: 300,
+  hpPerIngredient: 10000, // × число ингредиентов игрока с уровнем ≥ rankForHp
+  rankForHp: 3,
+  minIngredients: 1, // если таких ингредиентов нет, всё равно 10 000
+  adaptEvery: 5000, // урон между щелчками колеса
+  adaptedDamage: 0.2, // урон от освоенной способности делится на 5
+  wheelTurnTime: 0.9,
+  adaptSlowmo: { duration: 0.6, scale: 0.35 }, // игра на миг замедляется
+  knockbackScale: 0.15,
+  slash: { reach: 70, windup: 0.45, recover: 0.35, cooldown: 1.6, damage: 30 },
+  gravity: { firstDelay: 4, interval: 8, windup: 0.6, radius: 400, duration: 3, slow: 0.5 },
 };
 // Таблицы прогрессии по уровням 1–6 (индекс = уровень − 1).
 export const PROGRESSION_TABLES = {

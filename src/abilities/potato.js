@@ -104,9 +104,9 @@ export function createPotato(player, enemies, fx, hurt) {
         if (d2(e.x, e.y, shot.x, shot.y) >= (shot.r + e.r) ** 2) continue;
         shot.done = true;
         if (shot.kind === "potato") {
-          hurt(e, shot.dmg, shot.vx, shot.vy, B.knockback);
+          hurt(e, shot.dmg, shot.vx, shot.vy, B.knockback, { source: "potato" });
           split(shot, e);
-        } else hurt(e, shot.dmg, shot.vx, shot.vy, B.pelletKnockback);
+        } else hurt(e, shot.dmg, shot.vx, shot.vy, B.pelletKnockback, { source: "potato" });
         break;
       }
       if (shot.travelled >= shot.range) shot.done = true;

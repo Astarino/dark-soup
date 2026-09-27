@@ -19,7 +19,7 @@ export function createCabbage(player, enemies, hurt) {
       elapsed -= B.tick;
       for (const e of enemies)
         if (isHostile(e) && d2(e.x, e.y, player.x, player.y) < (s.R + e.r) ** 2)
-          hurt(e, s.tickDmg, e.x - player.x, e.y - player.y, 0, { quiet: true });
+          hurt(e, s.tickDmg, e.x - player.x, e.y - player.y, 0, { quiet: true, source: "cabbage" });
     }
   }
   return { update };

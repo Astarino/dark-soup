@@ -40,6 +40,11 @@ export const TEXT = {
     mob_runner_desc: "Хрупкий, но очень быстрый преследователь.",
     mob_brute: "Гоблин-громила",
     mob_brute_desc: "Медленный, крепкий и наносит сильный удар.",
+    mob_warden: "существо-1",
+    mob_warden_desc:
+      "Босс 5-й минуты. 10 000 здоровья за каждый ваш ингредиент 3-го уровня и выше. Бьёт клинком вблизи и гравитацией замедляет котёл. Каждые 5000 урона колесо щёлкает: способность, нанёсшая больше всего урона, дальше бьёт впятеро слабее и без побочных эффектов.",
+    wardenArrives: "СУЩЕСТВО-1",
+    adapted: "ОСВОЕНО",
     upgrade_carrot: "Морковь",
     upgrade_carrot_desc:
       "Раз в 2 секунды с неба падает морковка и бьёт по области.",
@@ -138,6 +143,11 @@ export const TEXT = {
     mob_runner_desc: "Fragile, but a very fast pursuer.",
     mob_brute: "Goblin Brute",
     mob_brute_desc: "Slow, tough, and hits hard.",
+    mob_warden: "creature-1",
+    mob_warden_desc:
+      "The 5-minute boss. 10,000 health per ingredient you have at rank 3 or higher. Slashes up close and slows the cauldron with gravity. Every 5,000 damage its wheel turns: the ability that hurt it most deals five times less damage and loses its side effects.",
+    wardenArrives: "CREATURE-1",
+    adapted: "ADAPTED",
     upgrade_carrot: "Carrot",
     upgrade_carrot_desc:
       "A carrot drops from above every 2 seconds, damaging an area.",

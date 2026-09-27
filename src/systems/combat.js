@@ -1,4 +1,4 @@
-import { COMBAT } from "../data/balance.js";
+import { COMBAT, WARDEN } from "../data/balance.js";
 import { rand } from "../shared/math.js";
 export function createCombat(player, gems, fx, onKill) {
   function damageEnemy(e, dmg) {
@@ -35,17 +35,38 @@ export function createCombat(player, gems, fx, onKill) {
         });
     }
   }
-  function hurt(e, dmg, forceX, forceY, kb, { quiet = false } = {}) {
+  // source — id способности супа. Страж Колеса считает урон по источникам и,
+  // освоив способность, получает от неё в 5 раз меньше урона без побочных
+  // эффектов (вспышки с торможением и отброса).
+  function hurt(e, dmg, forceX, forceY, kb, { quiet = false, source = null } = {}) {
     if (e.dead || e.charm > 0) return; // обращённые свёклой — союзники котла
+    const adapted = !!(source && e.adapted && e.adapted.includes(source));
     dmg = Math.max(
       1,
-      Math.round(dmg * player.dmgMul * rand(...COMBAT.damageSpread)),
+      Math.round(
+        dmg *
+          player.dmgMul *
+          rand(...COMBAT.damageSpread) *
+          (adapted ? WARDEN.adaptedDamage : 1),
+      ),
     );
-    e.flash = COMBAT.hitFlash;
-    const d = Math.hypot(forceX, forceY) || 1,
-      k = kb * (e.type === "brute" ? COMBAT.bruteKnockback : 1);
-    e.kx += (forceX / d) * k;
-    e.ky += (forceY / d) * k;
+    if (!adapted) {
+      e.flash = COMBAT.hitFlash;
+      const d = Math.hypot(forceX, forceY) || 1,
+        k =
+          kb *
+          (e.type === "brute"
+            ? COMBAT.bruteKnockback
+            : e.type === "warden"
+              ? WARDEN.knockbackScale
+              : 1);
+      e.kx += (forceX / d) * k;
+      e.ky += (forceY / d) * k;
+    }
+    if (source && e.dmgWindow) {
+      e.dmgWindow[source] = (e.dmgWindow[source] || 0) + dmg;
+      e.sinceAdapt += dmg;
+    }
     if (!quiet)
       fx.texts.push({
       x: e.x + rand(-6, 6),
@@ -53,7 +74,7 @@ export function createCombat(player, gems, fx, onKill) {
       t: 0,
       life: 0.6,
       txt: String(dmg),
-      col: "#fff3d6",
+      col: adapted ? "#9a9488" : "#fff3d6",
       size: 8,
     });
     damageEnemy(e, dmg);

@@ -17,6 +17,7 @@ export function onion(player, enemies, clock, hurt) {
             e.x - player.x,
             e.y - player.y,
             ABILITY_BEHAVIOR.onion.knockback,
+            { source: "onion" },
           );
         }
       }
