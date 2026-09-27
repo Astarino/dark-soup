@@ -45,26 +45,29 @@ export const TEXT = {
       "Раз в 2 секунды с неба падает морковка и бьёт по области.",
     upgrade_cabbage: "Капуста",
     upgrade_cabbage_desc:
-      "Когда враги подходят близко, барьер из листьев наносит урон и отбрасывает их. Перезарядка — 30 секунд.",
+      "Вокруг котла постоянно шелестит поле капустных листьев. Враги внутри получают урон каждые полсекунды.",
     upgrade_onion: "Лук",
     upgrade_onion_desc:
       "Луковицы разного размера кружат вокруг котла и бьют врагов.",
     upgrade_potato: "Картошка",
     upgrade_potato_desc:
-      "Котёл стреляет картофелиной в ближайшего врага. При попадании она разлетается веером дроби — около 10 осколков.",
+      "Котёл стреляет картофелиной в ближайшего врага. При попадании она разлетается веером из 10 дробинок. С уровнем в залпе больше картофелин.",
     upgrade_beet: "Свёкла",
     upgrade_beet_desc:
-      "Раз в 30 секунд рядом появляется свекольная лужа. Враги, наступившие в неё, на 10 секунд переходят на твою сторону и бьют своих (не больше 5 одновременно).",
+      "Раз в 30 секунд рядом появляется свекольная лужа. Враги, наступившие в неё, на 10 секунд переходят на твою сторону и бьют своих (не больше 5 одновременно). С уровнем луж больше и они шире.",
     upgrade_tomato: "Помидор",
     upgrade_tomato_desc:
-      "Раз в 5 секунд сверху падает помидор: урон по области и томатная лужа, в которой враги замедляются на 40%.",
+      "Раз в 5 секунд сверху падает помидор: урон по области и томатная лужа, которая растекается (площадь ×1,5 в секунду) и замедляет врагов на 40%.",
     upgrade_bellPepper: "Болгарский перец",
     upgrade_bellPepper_desc:
-      "Раз в 5 секунд котёл бросает дольку-бумеранг. Она пролетает сквозь врагов и возвращается; урон падает с каждым попаданием, всего до 10 попаданий.",
+      "Раз в 5 секунд котёл бросает дольку-бумеранг. Она пролетает сквозь врагов и возвращается; урон падает с каждым попаданием, до 10 попаданий на дольку. С уровнем долек больше.",
     pellets: "дробь",
     pelletDamage: "урон дроби",
     charmDuration: "обращение",
     range: "дальность",
+    damagePerTick: "урон за тик",
+    puddles: "лужи",
+    charmLimit: "лимит обращённых",
     upgrade_salt: "Соль",
     upgrade_salt_desc: "+15% к урону всех добавок.",
     upgrade_pepper: "Перец",
@@ -140,26 +143,29 @@ export const TEXT = {
       "A carrot drops from above every 2 seconds, damaging an area.",
     upgrade_cabbage: "Cabbage",
     upgrade_cabbage_desc:
-      "When enemies get close, a leaf barrier damages and knocks them back. 30 second cooldown.",
+      "A rustling field of cabbage leaves always surrounds the cauldron. Enemies inside take damage every half second.",
     upgrade_onion: "Onion",
     upgrade_onion_desc:
       "Onions of different sizes orbit the cauldron and strike enemies.",
     upgrade_potato: "Potato",
     upgrade_potato_desc:
-      "The cauldron fires a potato at the nearest enemy. On impact it bursts into a forward fan of about 10 pellets.",
+      "The cauldron fires a potato at the nearest enemy. On impact it bursts into a forward fan of 10 pellets. Higher ranks fire more potatoes per volley.",
     upgrade_beet: "Beet",
     upgrade_beet_desc:
-      "Every 30 seconds a beet puddle appears nearby. Enemies that step in switch sides for 10 seconds and attack their own (up to 5 at a time).",
+      "Every 30 seconds a beet puddle appears nearby. Enemies that step in switch sides for 10 seconds and attack their own (up to 5 at a time). Higher ranks add wider puddles.",
     upgrade_tomato: "Tomato",
     upgrade_tomato_desc:
-      "Every 5 seconds a tomato drops from above: area damage and a tomato puddle that slows enemies by 40%.",
+      "Every 5 seconds a tomato drops from above: area damage and a spreading tomato puddle (area ×1.5 per second) that slows enemies by 40%.",
     upgrade_bellPepper: "Bell Pepper",
     upgrade_bellPepper_desc:
-      "Every 5 seconds the cauldron throws a boomerang slice. It passes through enemies and returns; damage drops with each hit, up to 10 hits.",
+      "Every 5 seconds the cauldron throws a boomerang slice. It passes through enemies and returns; damage drops with each hit, up to 10 hits per slice. Higher ranks throw more slices.",
     pellets: "pellets",
     pelletDamage: "pellet damage",
     charmDuration: "charm",
     range: "range",
+    damagePerTick: "damage per tick",
+    puddles: "puddles",
+    charmLimit: "charm limit",
     upgrade_salt: "Salt",
     upgrade_salt_desc: "+15% damage for all ingredients.",
     upgrade_pepper: "Pepper",

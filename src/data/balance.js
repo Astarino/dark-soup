@@ -7,18 +7,30 @@ export const ENEMY_TYPES = {
   runner: { hp: 12, spd: 118, dmg: 6, r: 11, xp: 1 },
   brute: { hp: 110, spd: 50, dmg: 18, r: 24, xp: 6 },
 };
+// Таблицы прогрессии по уровням 1–6 (индекс = уровень − 1).
+export const PROGRESSION_TABLES = {
+  carrotCount: [1, 2, 4, 8, 16, 32],
+  potatoCount: [1, 2, 3, 5, 7, 10],
+  bellPepperCount: [1, 2, 3, 5, 7, 10],
+  tomatoCount: [1, 1, 1, 2, 2, 2],
+  beetPools: [1, 1, 2, 2, 2, 3],
+  beetRadius: [70, 85, 85, 100, 115, 115], // площадь ≈ ×1 / ×1,5 / ×2 / ×2,7
+  beetCharmLimit: [5, 7, 7, 10, 15, 15], // общий лимит на все лужи
+  cabbageRadius: [170, 190, 210, 230, 250, 270],
+  cabbageTickDamage: [3, 4, 5, 6, 7, 8],
+};
+const at = (table, l) => table[Math.min(table.length, Math.max(1, l)) - 1];
 export const ABILITY_STATS = {
   carrot: (l) => ({
     cd: +Math.max(0.8, 2.0 - 0.2 * (l - 1)).toFixed(1),
-    n: 1 + Math.floor((l - 1) / 2) + (l >= 6 ? 1 : 0),
+    n: at(PROGRESSION_TABLES.carrotCount, l),
     dmg: 22 + 8 * (l - 1),
     r: 55 + 6 * (l - 1),
   }),
+  // Постоянное поле: урон каждые ABILITY_BEHAVIOR.cabbage.tick секунд.
   cabbage: (l) => ({
-    cd: Math.max(10, 30 - 4 * (l - 1)),
-    R: 170 + 30 * (l - 1),
-    dmg: 35 + 15 * (l - 1),
-    trig: 110,
+    R: at(PROGRESSION_TABLES.cabbageRadius, l),
+    tickDmg: at(PROGRESSION_TABLES.cabbageTickDamage, l),
   }),
   onion: (l) => ({
     n: Math.min(8, 1 + l),
@@ -30,22 +42,25 @@ export const ABILITY_STATS = {
   potato: (l) => ({
     cd: +Math.max(1.0, 1.6 - 0.12 * (l - 1)).toFixed(2),
     dmg: 20 + 5 * (l - 1),
-    pellets: 10 + (l >= 3 ? 1 : 0) + (l >= 5 ? 1 : 0),
+    n: at(PROGRESSION_TABLES.potatoCount, l),
     pelletDmg: 5 + (l - 1),
   }),
   beet: (l) => ({
     cd: 30 - 2 * (l - 1),
-    R: 70 + 8 * (l - 1),
+    pools: at(PROGRESSION_TABLES.beetPools, l),
+    R: at(PROGRESSION_TABLES.beetRadius, l),
+    limit: at(PROGRESSION_TABLES.beetCharmLimit, l),
     dur: 10 + (l - 1),
   }),
   tomato: (l) => ({
     cd: +(5 - 0.4 * (l - 1)).toFixed(1),
-    n: l >= 3 ? 2 : 1,
+    n: at(PROGRESSION_TABLES.tomatoCount, l),
     dmg: 30 + 8 * (l - 1),
     r: 60 + 5 * (l - 1),
   }),
   bellPepper: (l) => ({
     cd: +(5 - 0.4 * (l - 1)).toFixed(1),
+    n: at(PROGRESSION_TABLES.bellPepperCount, l),
     dmg: Math.round(20 * (1 + 0.15 * (l - 1))),
     range: 320 + 15 * (l - 1),
   }),
@@ -99,13 +114,17 @@ export const ABILITY_BEHAVIOR = {
     knockback: 220,
     afterglow: 0.5,
   },
-  cabbage: { duration: 0.7, knockback: 520, afterglow: 0.3 },
+  carrotVolley: { spanTime: 0.6, jitter: 0.6, particles: 18, minParticles: 4 },
+  cabbage: { tick: 0.5 }, // без отбрасывания; вспышка попадания даёт лёгкое торможение
   onion: { hitInterval: 0.4, knockback: 140 },
   potato: {
     range: 420, // дальность выбора цели
     speed: 360,
     hitRadius: 8,
     maxDistance: 520, // промахнувшаяся картофелина исчезает
+    volleyGap: 0.05, // задержка между картофелинами залпа
+    repeatSpread: (8 * Math.PI) / 180, // отклонение повторных выстрелов в одну цель
+    pellets: 10, // дробинок от каждой картофелины
     knockback: 120,
     fan: (70 * Math.PI) / 180, // веер дроби по ходу полёта
     pelletSpeed: 420,
@@ -117,7 +136,7 @@ export const ABILITY_BEHAVIOR = {
     firstDelay: 1, // первая лужа сразу после выбора
     poolLife: 8,
     viewportShare: 0.8, // лужа появляется в центральной части экрана
-    maxCharmed: 5, // одновременно на всей карте
+    minSeparation: 2, // лужи одного залпа — не ближе 2 радиусов (если получится)
     attackInterval: 0.6,
     attackKnockback: 120,
     targetRange: 450,
@@ -131,7 +150,7 @@ export const ABILITY_BEHAVIOR = {
     knockback: 120,
     puddleLife: 4,
     puddleRadius: 70,
-    spread: 0.3, // время растекания лужи
+    areaGrowth: 1.5, // площадь лужи ×1,5 за каждую секунду после удара
     slow: 0.4, // замедление в луже: скорость × (1 − slow)
   },
   bellPepper: {

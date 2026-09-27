@@ -31,7 +31,6 @@ export function createSpawns(
       anim: rand(0, TAU),
       face: 1,
       oh: {},
-      wave: -1,
       dead: false,
       effects: {},
     });

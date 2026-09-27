@@ -4,23 +4,28 @@ import { nearestEnemy } from "./targeting.js";
 const B = ABILITY_BEHAVIOR.beet;
 // Свекольная лужа появляется в видимой области. Наступивший враг на время
 // переходит на сторону котла: бьёт ближайших врагов и не трогает котёл.
-// Обычные враги его не атакуют. Одновременно обращено не больше B.maxCharmed.
+// Обычные враги его не атакуют. Лимит обращённых по уровню — общий на все лужи.
 export function createBeet(player, enemies, fx, hurt, viewport) {
   const pools = [];
   let timer = null;
   const charmedCount = () =>
     enemies.reduce((n, e) => n + (!e.dead && e.charm > 0 ? 1 : 0), 0);
-  function spawnPool(s) {
+  // Лужи одного залпа — в разных местах видимой области; несколько попыток
+  // найти точку не ближе minSeparation радиусов к уже выбранным.
+  function spawnPools(s) {
     const w = viewport.width * B.viewportShare,
-      h = viewport.height * B.viewportShare;
-    pools.push({
-      x: clamp(player.x + rand(-w / 2, w / 2), 80, WORLD.w - 80),
-      y: clamp(player.y + rand(-h / 2, h / 2), 80, WORLD.h - 80),
-      r: s.R,
-      dur: s.dur,
-      t: 0,
-      life: B.poolLife,
-    });
+      h = viewport.height * B.viewportShare,
+      placed = [];
+    for (let i = 0; i < s.pools; i++) {
+      let x, y;
+      for (let attempt = 0; attempt < 12; attempt++) {
+        x = clamp(player.x + rand(-w / 2, w / 2), 80, WORLD.w - 80);
+        y = clamp(player.y + rand(-h / 2, h / 2), 80, WORLD.h - 80);
+        if (placed.every((p) => d2(p.x, p.y, x, y) >= (B.minSeparation * s.R) ** 2)) break;
+      }
+      placed.push({ x, y });
+      pools.push({ x, y, r: s.R, dur: s.dur, t: 0, life: B.poolLife });
+    }
   }
   function charm(e, pool) {
     e.charm = pool.dur;
@@ -46,15 +51,16 @@ export function createBeet(player, enemies, fx, hurt, viewport) {
       timer -= dt;
       if (timer <= 0) {
         timer = s.cd;
-        spawnPool(s);
+        spawnPools(s);
       }
     }
+    const limit = level > 0 ? ABILITY_STATS.beet(level).limit : 0;
     let charmed = charmedCount();
     for (const pool of pools) {
       pool.t += dt;
       if (pool.t >= pool.life) continue;
       for (const e of enemies) {
-        if (charmed >= B.maxCharmed) break;
+        if (charmed >= limit) break;
         if (e.dead || e.charm > 0) continue;
         if (d2(e.x, e.y, pool.x, pool.y) < pool.r * pool.r) {
           charm(e, pool);

@@ -22,6 +22,6 @@ export function createPlayer(catalog = UPG) {
     magnet: PLAYER.magnet,
     contactEffects: ["burning"],
     lv: Object.fromEntries(catalog.map((u) => [u.id, 0])),
-    cd: { carrot: 0, cabbage: 0 },
+    cd: { carrot: 0 },
   };
 }

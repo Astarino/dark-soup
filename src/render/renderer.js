@@ -5,8 +5,6 @@ import {
   ICON,
   FALL_CARROT,
   GEM,
-  LEAF_H,
-  LEAF_V,
   SKULL,
   HEART,
   GOB,
@@ -16,6 +14,7 @@ import {
   PELLETS,
   FALL_TOMATO,
   PEPPER_SLICE,
+  CABBAGE_LEAVES,
   FIRE_LOGS,
   onionSprite,
   logSprite,
@@ -41,7 +40,6 @@ export function createRenderer(cvs, world, tr) {
       enemies,
       gems,
       strikes,
-      waves,
       parts,
       texts,
       drops,
@@ -317,16 +315,55 @@ export function createRenderer(cvs, world, tr) {
           X = sx(p.x),
           Y = sy(p.y);
         if (r < 1 || (a < 0.5 && Math.floor(time * 10) % 2)) continue;
-        pEll(X, Y, r, r * 0.6, "rgba(90,14,10,.7)");
-        pEll(X, Y, r - 2, r * 0.6 - 1, "rgba(200,40,30,.75)");
-        pEll(X - r * 0.2, Y - r * 0.1, r * 0.45, r * 0.22, "rgba(255,110,80,.6)");
+        // Лужа растекается широко, поэтому полупрозрачная: земля и враги читаются.
+        pEll(X, Y, r, r * 0.6, "rgba(90,14,10,.32)");
+        pEll(X, Y, r * 0.8, r * 0.48, "rgba(200,40,30,.28)");
+        pEll(X - r * 0.2, Y - r * 0.1, r * 0.35, r * 0.18, "rgba(255,110,80,.3)");
+        pRing(X, Y, r, r * 0.6, "rgba(230,70,50,.55)");
         for (let i = 0; i < 6; i++) {
           const an = i * 2.4 + p.x * 0.01;
           pRect(Math.round(X + Math.cos(an) * r * 0.55), Math.round(Y + Math.sin(an) * r * 0.3), 1, 1, "#f4e0a0");
         }
       }
     }
+    // Постоянное поле капусты: три кольца листьев, которые медленно дрейфуют,
+    // покачиваются и чуть смещаются. Рисуется под врагами и котлом.
+    function drawCabbageField() {
+      if (!(player.lv.cabbage > 0) || state === "over") return;
+      const R = ABILITY_STATS.cabbage(player.lv.cabbage).R / K,
+        X = sx(player.x),
+        Y = sy(player.y);
+      pRing(X, Y, R, R * 0.8, "rgba(150,220,90,.28)", 2, Math.floor(time * 3));
+      ctx.globalAlpha = 0.9;
+      for (const [ring, share, spacing] of [
+        [0, 0.97, 19],
+        [1, 0.74, 23],
+        [2, 0.5, 28],
+      ]) {
+        const r = R * share,
+          n = Math.max(5, Math.round((TAU * r * 0.9) / spacing)),
+          step = TAU / n,
+          drift = time * 0.1 * (ring % 2 ? -1 : 1);
+        for (let i = 0; i < n; i++) {
+          // Постоянный «беспорядок» у каждого листа, чтобы не было ровных бус.
+          const h1 = Math.sin(i * 12.9898 + ring * 78.233) * 43758.5453,
+            jitter = h1 - Math.floor(h1),
+            phase = i * 1.7 + ring * 2.3,
+            an = i * step + drift + (jitter - 0.5) * step * 0.7 + Math.sin(time * 1.3 + phase) * 0.03,
+            rr = r + (jitter - 0.5) * 10 + Math.sin(time * 2.1 + phase) * 1.5,
+            lx = Math.round(X + Math.cos(an) * rr),
+            ly = Math.round(Y + Math.sin(an) * rr * 0.8),
+            tilt = Math.sin(time * 0.8 + phase) * 0.45 + (jitter - 0.5) * 1.2,
+            rot = (((Math.round((an + Math.PI / 2 + tilt) / (Math.PI / 4)) % 8) + 8) % 8),
+            img = CABBAGE_LEAVES[Math.floor(jitter * 3)][rot];
+          ctx.drawImage(img, lx - 9, ly - 9);
+        }
+      }
+      ctx.globalAlpha = 1;
+    }
     function drawEffectsGround() {
+      // В большом залпе метки падения бледнее, чтобы не сливаться в оранжевый шум.
+      const telegraphAlpha = Math.min(1, Math.sqrt(4 / Math.max(1, strikes.length)) + 0.25);
       drawPuddles();
       for (const d of tomatoDrops) {
         if (d.t < 0) continue;
@@ -347,7 +384,7 @@ export function createRenderer(cvs, world, tr) {
             Y,
             r,
             r * 0.55,
-            `rgba(255,150,60,${0.35 + 0.5 * k})`,
+            `rgba(255,150,60,${(0.35 + 0.5 * k) * telegraphAlpha})`,
             3,
             Math.floor(time * 20),
           );
@@ -366,39 +403,7 @@ export function createRenderer(cvs, world, tr) {
           pEll(X, Y, 8, 3, `rgba(20,12,6,${0.6 * (1 - k)})`);
         }
       }
-      for (const w of waves) {
-        const k = Math.min(1, w.t / w.dur),
-          cur = (w.R * (1 - Math.pow(1 - k, 3))) / K,
-          a = w.t > w.dur ? 1 - (w.t - w.dur) / 0.3 : 1;
-        const X = sx(player.x),
-          Y = sy(player.y);
-        pRing(X, Y, cur, cur * 0.8, `rgba(150,220,90,${0.35 * a})`);
-        pRing(X, Y, cur - 2, cur * 0.8 - 2, `rgba(110,190,70,${0.2 * a})`, 2);
-        const n = Math.max(8, Math.floor(cur / 5));
-        ctx.globalAlpha = a;
-        for (let i = 0; i < n; i++) {
-          const an = (i / n) * TAU + w.t * 0.8,
-            lx = Math.round(X + Math.cos(an) * cur),
-            ly = Math.round(Y + Math.sin(an) * cur * 0.8);
-          const img = Math.abs(Math.sin(an)) > 0.6 ? LEAF_H : LEAF_V;
-          ctx.drawImage(img, lx - (img.width >> 1), ly - (img.height >> 1));
-        }
-        ctx.globalAlpha = 1;
-      }
-      if (player.lv.cabbage > 0 && player.cd.cabbage <= 0 && state !== "over") {
-        const s = ABILITY_STATS.cabbage(player.lv.cabbage),
-          pulse = 0.5 + 0.5 * Math.sin(time * 4),
-          r = s.trig / K;
-        pRing(
-          sx(player.x),
-          sy(player.y),
-          r,
-          r * 0.8,
-          `rgba(150,220,90,${0.25 + 0.2 * pulse})`,
-          2,
-          Math.floor(time * 6),
-        );
-      }
+      drawCabbageField();
       for (const g of gems) {
         const img = GEM[g.v > 1 ? 1 : 0],
           bob = Math.floor(time * 4 + g.x) % 2;
@@ -504,7 +509,12 @@ export function createRenderer(cvs, world, tr) {
           ctx.fillRect(X, Y, r, r);
         }
       }
+      // На высоких уровнях цифр урона сотни: рисуем только самые свежие,
+      // крупные объявления (например, «ОРДА!») — всегда.
+      const MAX_DAMAGE_TEXTS = 40;
+      let smallLeft = texts.filter((t) => t.size <= 8).length - MAX_DAMAGE_TEXTS;
       for (const t of texts) {
+        if (t.size <= 8 && smallLeft-- > 0) continue;
         const k = t.t / t.life;
         if (k > 0.75 && Math.floor(t.t * 30) % 2) continue;
         ptext(t.txt, sx(t.x), sy(t.y), t.col, t.size, "center");
@@ -602,8 +612,6 @@ export function createRenderer(cvs, world, tr) {
         let cdk = 0;
         if (u.id === "carrot")
           cdk = clamp(player.cd.carrot / ABILITY_STATS.carrot(lv).cd, 0, 1);
-        if (u.id === "cabbage")
-          cdk = clamp(player.cd.cabbage / ABILITY_STATS.cabbage(lv).cd, 0, 1);
         if (u.id in cooldowns) cdk = cooldowns[u.id];
         if (cdk > 0)
           pRect(ix + 1, iy + 1, 14, Math.round(14 * cdk), "rgba(0,0,0,.6)");

@@ -16,7 +16,7 @@ import {
   HEAL,
 } from "../src/systems/upgrades.js";
 import { carrot } from "../src/abilities/carrot.js";
-import { cabbage } from "../src/abilities/cabbage.js";
+import { createCabbage } from "../src/abilities/cabbage.js";
 import { onion } from "../src/abilities/onion.js";
 import { onionBalls } from "../src/abilities/onion-orbit.js";
 import { createPreferences } from "../src/storage/preferences.js";
@@ -194,24 +194,26 @@ test("carrot resolves after its fall, hits once, then expires", () =>
     assert.equal(hits, 1);
     assert.equal(strikes.length, 0);
   }));
-test("cabbage requires proximity, respects cooldown, hits once per wave", () =>
-  seeded(() => {
-    const p = createPlayer();
-    p.lv.cabbage = 1;
-    const enemies = [enemy({ x: p.x + 1000 })],
-      waves = [],
-      fx = createVisualState();
-    let hits = 0;
-    cabbage(p, enemies, waves, fx, () => hits++, 0.1);
-    assert.equal(waves.length, 0);
-    enemies[0].x = p.x + 50;
-    cabbage(p, enemies, waves, fx, () => hits++, 0.2);
-    assert.equal(p.cd.cabbage, 30);
-    assert.equal(hits, 1);
-    cabbage(p, enemies, waves, fx, () => hits++, 0.2);
-    assert.equal(hits, 1);
-    assert.equal(waves.length, 1);
-  }));
+test("cabbage field is always on and damages enemies inside on each tick", () => {
+  const p = createPlayer();
+  p.lv.cabbage = 1;
+  const inside = enemy({ x: p.x + 150 }),
+    outside = enemy({ x: p.x + 400 }),
+    hits = [];
+  const field = createCabbage(p, [inside, outside], (e, dmg, fx, fy, kb, opts) =>
+    hits.push({ e, dmg, kb, opts }),
+  );
+  field.update(0.49);
+  assert.equal(hits.length, 0, "no damage before the first tick");
+  field.update(0.01);
+  assert.equal(hits.length, 1);
+  assert.equal(hits[0].e, inside);
+  assert.equal(hits[0].dmg, 3);
+  assert.equal(hits[0].kb, 0, "no knockback");
+  assert.equal(hits[0].opts.quiet, true, "no damage numbers");
+  field.update(0.5);
+  assert.equal(hits.length, 2, "keeps ticking without cooldown or trigger");
+});
 test("onion collision cooldown is per enemy and ball", () => {
   const p = createPlayer();
   p.lv.onion = 1;

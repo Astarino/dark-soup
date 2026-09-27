@@ -1,33 +1,47 @@
 import { ABILITY_BEHAVIOR, ABILITY_STATS } from "../data/balance.js";
 import { clamp, d2, rand } from "../shared/math.js";
-import { isHostile, nearestEnemy } from "./targeting.js";
+import { isHostile } from "./targeting.js";
 const B = ABILITY_BEHAVIOR.potato;
 // Картофелина летит в ближайшего врага и при попадании разлетается веером дроби.
 // Дробь бьёт одного врага и исчезает; повторно она не делится.
 export function createPotato(player, enemies, fx, hurt) {
   const shots = [];
   let timer = 0;
+  // Залп: каждая картофелина — в своего из ближайших врагов. Если врагов
+  // меньше, лишние летят в те же цели с отклонением ±repeatSpread; выстрелы
+  // разнесены на volleyGap, чтобы залп не сливался в одну картофелину.
   function fire(s) {
-    const target = nearestEnemy(enemies, player.x, player.y, B.range);
-    if (!target) return false;
-    const dx = target.x - player.x,
-      dy = target.y - player.y,
-      d = Math.hypot(dx, dy) || 1;
-    shots.push({
-      kind: "potato",
-      x: player.x,
-      y: player.y,
-      vx: (dx / d) * B.speed,
-      vy: (dy / d) * B.speed,
-      travelled: 0,
-      range: B.maxDistance,
-      r: B.hitRadius,
-      dmg: s.dmg,
-      pellets: s.pellets,
-      pelletDmg: s.pelletDmg,
-      skip: null,
-      done: false,
-    });
+    const range2 = B.range * B.range,
+      targets = enemies
+        .filter((e) => isHostile(e) && d2(e.x, e.y, player.x, player.y) < range2)
+        .sort(
+          (a, b) =>
+            d2(a.x, a.y, player.x, player.y) - d2(b.x, b.y, player.x, player.y),
+        )
+        .slice(0, s.n);
+    if (!targets.length) return false;
+    for (let i = 0; i < s.n; i++) {
+      const target = targets[i % targets.length],
+        round = Math.floor(i / targets.length),
+        offset = round === 0 ? 0 : Math.ceil(round / 2) * B.repeatSpread * (round % 2 ? 1 : -1),
+        a = Math.atan2(target.y - player.y, target.x - player.x) + offset;
+      shots.push({
+        kind: "potato",
+        x: player.x,
+        y: player.y,
+        vx: Math.cos(a) * B.speed,
+        vy: Math.sin(a) * B.speed,
+        wait: i * B.volleyGap,
+        travelled: 0,
+        range: B.maxDistance,
+        r: B.hitRadius,
+        dmg: s.dmg,
+        pellets: B.pellets,
+        pelletDmg: s.pelletDmg,
+        skip: null,
+        done: false,
+      });
+    }
     return true;
   }
   function split(shot, struck) {
@@ -43,6 +57,7 @@ export function createPotato(player, enemies, fx, hurt) {
         y: shot.y,
         vx: Math.cos(a) * v,
         vy: Math.sin(a) * v,
+        wait: 0,
         travelled: 0,
         range: B.pelletRange,
         r: B.pelletRadius,
@@ -75,6 +90,12 @@ export function createPotato(player, enemies, fx, hurt) {
     for (let i = 0; i < count; i++) {
       const shot = shots[i];
       if (shot.done) continue;
+      if (shot.wait > 0) {
+        shot.wait -= dt;
+        shot.x = player.x;
+        shot.y = player.y;
+        continue;
+      }
       shot.x += shot.vx * dt;
       shot.y += shot.vy * dt;
       shot.travelled += Math.hypot(shot.vx, shot.vy) * dt;
@@ -95,7 +116,9 @@ export function createPotato(player, enemies, fx, hurt) {
   return {
     update,
     view: () =>
-      shots.map(({ kind, x, y, vx, vy }) => ({ kind, x, y, vx, vy })),
+      shots
+        .filter((s) => !(s.wait > 0))
+        .map(({ kind, x, y, vx, vy }) => ({ kind, x, y, vx, vy })),
     cooldown: () =>
       player.lv.potato > 0
         ? clamp(timer / ABILITY_STATS.potato(player.lv.potato).cd, 0, 1)

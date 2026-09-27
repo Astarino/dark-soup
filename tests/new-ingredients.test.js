@@ -142,7 +142,7 @@ test("potato hits, splits into a forward fan of pellets that never split again",
       potato.update(DT);
       pellets = potato.view().filter((p) => p.kind === "pellet").length;
     }
-    assert.equal(pellets, s.pellets);
+    assert.equal(pellets, ABILITY_BEHAVIOR.potato.pellets);
     assert.equal(potato.view().filter((p) => p.kind === "potato").length, 0);
     assert.equal(r.hits[0].e, target);
     assert.equal(r.hits[0].dmg, s.dmg);
@@ -243,7 +243,6 @@ test("tomato damages only on landing and its puddle slows by 40% without damage"
     r.player.lv.tomato = 0; // больше не бросать: проверяем одну лужу
     assert.equal(r.hits.length, 1);
     assert.equal(r.hits[0].dmg, ABILITY_STATS.tomato(1).dmg);
-    run(tomato.update, B.spread);
     assert.equal(tomato.speedFactor(target), 0.6);
     run(tomato.update, 2);
     assert.equal(r.hits.length, 1, "puddle does no damage over time");

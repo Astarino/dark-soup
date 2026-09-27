@@ -3,7 +3,7 @@ import { TAU, clamp, d2, rand } from "../shared/math.js";
 import { isHostile } from "./targeting.js";
 const B = ABILITY_BEHAVIOR.tomato;
 // Помидор падает на случайного врага рядом: урон при приземлении, затем
-// томатная лужа, которая только замедляет (без урона со временем).
+// томатная лужа, которая растекается и только замедляет (без урона со временем).
 export function createTomato(player, enemies, fx, hurt) {
   const drops = [],
     puddles = [];
@@ -53,7 +53,9 @@ export function createTomato(player, enemies, fx, hurt) {
       });
     }
   }
-  const radiusOf = (p) => p.R * Math.min(1, p.t / B.spread);
+  // Площадь растёт в areaGrowth раз за каждую секунду после удара:
+  // S(t) = S0 · g^t, значит радиус r(t) = R0 · g^(t/2). Рост непрерывный.
+  const radiusOf = (p) => p.R * Math.pow(B.areaGrowth, p.t / 2);
   function update(dt) {
     const level = player.lv.tomato || 0;
     if (level > 0) {

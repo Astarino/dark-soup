@@ -35,7 +35,7 @@ export function createCombat(player, gems, fx, onKill) {
         });
     }
   }
-  function hurt(e, dmg, forceX, forceY, kb) {
+  function hurt(e, dmg, forceX, forceY, kb, { quiet = false } = {}) {
     if (e.dead || e.charm > 0) return; // обращённые свёклой — союзники котла
     dmg = Math.max(
       1,
@@ -46,7 +46,8 @@ export function createCombat(player, gems, fx, onKill) {
       k = kb * (e.type === "brute" ? COMBAT.bruteKnockback : 1);
     e.kx += (forceX / d) * k;
     e.ky += (forceY / d) * k;
-    fx.texts.push({
+    if (!quiet)
+      fx.texts.push({
       x: e.x + rand(-6, 6),
       y: e.y - e.r * 3,
       t: 0,

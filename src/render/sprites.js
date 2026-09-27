@@ -1,7 +1,7 @@
 import { TAU, mulberry32, hash2 } from "../shared/math.js";
 
 import { OUT } from "./style.js";
-import { PB, ramp, sphereV, flipC, tintC, rotC } from "./pixels.js";
+import { PB, ramp, sphereV, flipC, tintC } from "./pixels.js";
 const PAL = {
   k: OUT,
   o: "#ee7a22",
@@ -249,12 +249,6 @@ export const GEM = [
     return pb.canvas();
   })(),
 ];
-export const LEAF_H = (() => {
-  const pb = new PB(7, 4);
-  pb.rows(0, 0, [".kkkk..", "kLLLlk.", "klllnnk", ".kkkkk."], PAL);
-  return pb.canvas();
-})();
-export const LEAF_V = rotC(LEAF_H);
 export const SKULL = (() => {
   const pb = new PB(7, 7);
   pb.rows(
@@ -337,6 +331,49 @@ export const PEPPER_SLICE = Array.from({ length: 8 }, (_, k) => {
   pb.outline(OUT);
   return pb.canvas();
 });
+// Лист капусты для постоянного поля: неровный край, светлая центральная
+// жилка и боковые прожилки. 3 варианта × 8 поворотов (пиксели без поворота холста).
+export const CABBAGE_LEAVES = [0, 1, 2].map((variant) =>
+  Array.from({ length: 8 }, (_, k) => {
+    const size = 19,
+      c = size / 2,
+      a = (k * Math.PI) / 4,
+      ca = Math.cos(a),
+      sa = Math.sin(a),
+      L = 8.2 - variant * 0.7,
+      Wd = 5.6 + variant * 0.5;
+    const pb = new PB(size, size);
+    for (let y = 0; y < size; y++)
+      for (let x = 0; x < size; x++) {
+        const dx = x + 0.5 - c,
+          dy = y + 0.5 - c,
+          u = dx * ca + dy * sa,
+          v = -dx * sa + dy * ca,
+          // волнистый край листа
+          ruffle = 1 - 0.2 * Math.abs(Math.sin(u * 1.3 + variant * 2 + (v > 0 ? 1 : 0))),
+          q = (u / L) ** 2 + (v / Wd) ** 2;
+        if (q > ruffle) continue;
+        const midrib = Math.abs(v) < 0.6 && u > -L * 0.95 && u < L * 0.8,
+          vein = [-4, -1.5, 1].some(
+            (u0) => u > u0 && Math.abs(Math.abs(v) - (u - u0) * 0.85) < 0.5 && q < 0.75,
+          );
+        const shade = 0.62 + (v > 0 ? -0.18 : 0.12) - q * 0.45 + variant * 0.04;
+        pb.set(
+          x,
+          y,
+          midrib
+            ? "#eaf6d0"
+            : vein
+              ? "#cfe9a0"
+              : q > ruffle - 0.18
+                ? "#4f8a2c"
+                : ramp(["#4f8a2c", "#6aa83c", "#86c452", "#a6d86a", "#c2e68a"], shade, x, y),
+      );
+      }
+    pb.outline("#1c3310");
+    return pb.canvas();
+  }),
+);
 const GOB_DEF = {
   goblin: {
     head: 5,

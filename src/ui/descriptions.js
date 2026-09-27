@@ -12,6 +12,9 @@ export function describeUpgrade(u, level, tr) {
     pelletDmg: ["pelletDamage", ""],
     dur: ["charmDuration", " s"],
     range: ["range", ""],
+    tickDmg: ["damagePerTick", ""],
+    pools: ["puddles", ""],
+    limit: ["charmLimit", ""],
   };
   function statDiff(id, l) {
     const a = ABILITY_STATS[id](l),

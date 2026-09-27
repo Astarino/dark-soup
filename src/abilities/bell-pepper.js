@@ -5,34 +5,42 @@ const B = ABILITY_BEHAVIOR.bellPepper;
 // Долька болгарского перца летит бумерангом и возвращается к котлу.
 // Проходит сквозь врагов; урон падает по списку B.hits, после него долька
 // больше не бьёт. Одного врага задевает раз на пути туда и раз обратно.
-// Новый бросок не ждёт возвращения предыдущей дольки.
+// Новый бросок не ждёт возвращения предыдущих долек.
 export function createBellPepper(player, enemies, fx, hurt) {
   const slices = [];
   let timer = 0,
     side = 1;
-  function throwSlice(s) {
+  // Бросок из s.n долек: первая — к ближайшему врагу, остальные с равным шагом
+  // по кругу. Соседние дольки изгибаются в разные стороны. У каждой дольки
+  // свой счёт попаданий и своё возвращение.
+  function throwSlices(s) {
     const target = nearestEnemy(enemies, player.x, player.y, B.range);
-    let a;
-    if (target) a = Math.atan2(target.y - player.y, target.x - player.x);
-    else if (Math.hypot(player.vx, player.vy) > 20) a = Math.atan2(player.vy, player.vx);
-    else a = rand(0, TAU);
-    side = -side;
-    slices.push({
-      ox: player.x,
-      oy: player.y,
-      x: player.x,
-      y: player.y,
-      dx: Math.cos(a),
-      dy: Math.sin(a),
-      side,
-      range: s.range,
-      mul: s.dmg / B.hits[0],
-      t: 0,
-      phase: "out",
-      hits: 0,
-      struck: { out: new Set(), back: new Set() },
-      done: false,
-    });
+    let base;
+    if (target) base = Math.atan2(target.y - player.y, target.x - player.x);
+    else if (Math.hypot(player.vx, player.vy) > 20)
+      base = Math.atan2(player.vy, player.vx);
+    else base = rand(0, TAU);
+    for (let i = 0; i < s.n; i++) {
+      const a = base + (i * TAU) / s.n;
+      side = -side;
+      slices.push({
+        ox: player.x,
+        oy: player.y,
+        x: player.x,
+        y: player.y,
+        dx: Math.cos(a),
+        dy: Math.sin(a),
+        side,
+        spin0: i * 3, // разный поворот, чтобы дольки залпа не выглядели одинаково
+        range: s.range,
+        mul: s.dmg / B.hits[0],
+        t: 0,
+        phase: "out",
+        hits: 0,
+        struck: { out: new Set(), back: new Set() },
+        done: false,
+      });
+    }
   }
   function move(slice, dt) {
     slice.t += dt;
@@ -72,7 +80,7 @@ export function createBellPepper(player, enemies, fx, hurt) {
       timer -= dt;
       if (timer <= 0) {
         timer = s.cd;
-        throwSlice(s);
+        throwSlices(s);
       }
     }
     for (const slice of slices) {
@@ -84,10 +92,10 @@ export function createBellPepper(player, enemies, fx, hurt) {
   return {
     update,
     view: () =>
-      slices.map(({ x, y, t, phase, hits }) => ({
+      slices.map(({ x, y, t, spin0, phase, hits }) => ({
         x,
         y,
-        spin: t * 14,
+        spin: t * 14 + spin0,
         phase,
         spent: hits >= B.hits.length,
       })),

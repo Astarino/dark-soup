@@ -11,19 +11,32 @@ export function carrot(player, enemies, strikes, fx, hurt, dt) {
         (e) =>
           d2(e.x, e.y, player.x, player.y) < ABILITY_BEHAVIOR.carrot.range ** 2,
       );
+      // Сначала разные враги в радиусе; лишние морковки снова идут по тем же
+      // врагам со сдвигом, чтобы большой залп не падал в одну точку.
+      const V = ABILITY_BEHAVIOR.carrotVolley,
+        pool = [],
+        targets = [],
+        stagger = Math.min(ABILITY_BEHAVIOR.carrot.stagger, V.spanTime / s.n);
       for (let i = 0; i < s.n; i++) {
         let tx, ty;
-        if (cands.length) {
-          const e = cands.splice(
-            Math.floor(Math.random() * cands.length),
-            1,
-          )[0];
+        if (!pool.length && i > 0 && cands.length === 0) pool.push(...targets);
+        if (cands.length || pool.length) {
+          const fresh = cands.length > 0,
+            list = fresh ? cands : pool,
+            e = list.splice(Math.floor(Math.random() * list.length), 1)[0];
+          if (fresh) targets.push(e);
           const dx = player.x - e.x,
             dy = player.y - e.y,
             d = Math.hypot(dx, dy) || 1,
             lead = Math.min(d * 0.5, e.spd * 0.4);
           tx = e.x + (dx / d) * lead;
           ty = e.y + (dy / d) * lead;
+          if (!fresh) {
+            const a = rand(0, TAU),
+              off = rand(0.3, 1) * s.r * V.jitter;
+            tx += Math.cos(a) * off;
+            ty += Math.sin(a) * off;
+          }
         } else {
           const a = rand(0, TAU),
             dd = rand(80, 240);
@@ -33,11 +46,12 @@ export function carrot(player, enemies, strikes, fx, hurt, dt) {
         strikes.push({
           x: tx,
           y: ty,
-          t: -i * ABILITY_BEHAVIOR.carrot.stagger,
+          t: -i * stagger,
           fall: ABILITY_BEHAVIOR.carrot.fall,
           r: s.r,
           dmg: s.dmg,
           hit: false,
+          sparks: Math.max(V.minParticles, Math.round(V.particles / Math.sqrt(s.n))),
         });
       }
     }
@@ -56,7 +70,7 @@ export function carrot(player, enemies, strikes, fx, hurt, dt) {
             e.y - s.y,
             ABILITY_BEHAVIOR.carrot.knockback,
           );
-      for (let k = 0; k < 18; k++) {
+      for (let k = 0; k < s.sparks; k++) {
         const a = rand(0, TAU),
           v = rand(60, 220);
         fx.parts.push({

@@ -158,7 +158,6 @@ export function createGame(
         cam,
         ...fx,
         strikes: abilities.strikes,
-        waves: abilities.waves,
         ...abilities.view(),
       }),
   });
