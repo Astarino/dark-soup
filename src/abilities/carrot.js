@@ -60,7 +60,7 @@ export function carrot(player, enemies, strikes, fx, hurt, dt) {
     s.t += dt;
     if (!s.hit && s.t >= s.fall) {
       s.hit = true;
-      fx.shake = Math.min(6, fx.shake + 2);
+      fx.shake = Math.min(ABILITY_BEHAVIOR.carrot.shake.max, fx.shake + ABILITY_BEHAVIOR.carrot.shake.perHit);
       fx.sounds.push({ id: "carrotLand", x: s.x, y: s.y });
       for (const e of enemies)
         if (d2(e.x, e.y, s.x, s.y) < (s.r + e.r) ** 2)

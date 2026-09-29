@@ -42,23 +42,25 @@ const hit = (r, source, dmg, times = 1) => {
   for (let i = 0; i < times; i++) r.combat.hurt(r.boss, dmg, 1, 0, 100, { source });
 };
 
-test("warden spawns once at 5:00 with 10 000 HP per rank-3+ ingredient", () =>
+test("creature-1 spawns once at 3:00 with 2000 HP per rank-3+ ingredient", () =>
   seeded(() => {
-    assert.equal(WARDEN.spawnAt, 300);
+    assert.equal(WARDEN.spawnAt, 180);
     const r = rig({ carrot: 3, onion: 4, potato: 2, tomato: 6 });
     assert.equal(r.boss.type, "warden");
-    assert.equal(r.boss.hp, 30000);
+    assert.equal(r.boss.hp, 6000);
+    assert.equal(r.boss.spd, 66);
     r.warden.update(DT);
     assert.equal(r.enemies.length, 1, "spawns only once");
-    assert.equal(rig({ carrot: 1 }).boss.hp, 10000, "minimum one ingredient");
+    assert.equal(rig({ carrot: 1 }).boss.hp, 2000, "minimum one ingredient");
     const list = [];
-    createWarden(createPlayer(), list, { time: 299 }, createVisualState(), () => [0, 0]).update(DT);
-    assert.equal(list.length, 0, "not before 5:00");
+    createWarden(createPlayer(), list, { time: 179.9 }, createVisualState(), () => [0, 0]).update(DT);
+    assert.equal(list.length, 0, "not before 3:00");
   }));
 
 test("every 5000 damage the wheel adapts to the top damage source", () =>
   seeded(() => {
     const r = rig({ carrot: 3, onion: 3 });
+    r.boss.hp = r.boss.max = 1e9; // здоровье не мешает счёту урона
     hit(r, "onion", 100, 10); // ~1000
     hit(r, "carrot", 100, 45); // ~4500 → всего ≥ 5000
     r.warden.update(DT);
@@ -161,7 +163,7 @@ test("the blade hits after a wind-up and can be dodged", () =>
     assert.equal(d.player.hp, hp2);
   }));
 
-test("full game: the warden arrives at 5:00 and a wheel turn briefly slows time", () =>
+test("full game: creature-1 arrives at 3:00 and a wheel turn briefly slows time", () =>
   seeded(() => {
     const world = createWorld();
     let armed = false;
@@ -185,14 +187,14 @@ test("full game: the warden arrives at 5:00 and a wheel turn briefly slows time"
     for (let f = 0; f < 60 * 340 && game.state !== "over"; f++) {
       if (game.state === "levelup") game.choose(0);
       // До босса котёл бегает по кругу; после — стоит, чтобы босс подошёл.
-      game.step(DT, f < 60 * 300 ? { x: Math.cos(f / 200), y: Math.sin(f / 200) } : { x: 0, y: 0 });
+      game.step(DT, f < 60 * 180 ? { x: Math.cos(f / 200), y: Math.sin(f / 200) } : { x: 0, y: 0 });
       if (f % 15) continue; // снимок раз в 15 кадров: замедление длится дольше
       const s = game.snapshot();
       boss = s.enemies.find((e) => e.type === "warden") || boss;
       if (s.slowmo) slowSeen = true;
     }
     assert.ok(boss, "warden appeared");
-    assert.equal(boss.max, 70000, "7 ingredients at rank 3");
+    assert.equal(boss.max, 14000, "7 ingredients at rank 3");
     assert.ok(boss.wheelSteps >= 1, "wheel turned at least once");
     assert.ok(slowSeen, "slow-motion on a wheel turn");
   }));

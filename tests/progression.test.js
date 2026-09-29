@@ -69,9 +69,9 @@ test("every ingredient still caps at rank 6", () => {
   for (const u of UPG.filter((x) => x.kind === "ing")) assert.equal(u.max, 6, u.id);
 });
 
-test("carrot volley sizes per level: 1, 2, 4, 8, 16, 32", () =>
+test("carrot volley sizes per level: 2, 4, 6, 8, 10, 16", () =>
   seeded(() => {
-    assert.deepEqual(T.carrotCount, [1, 2, 4, 8, 16, 32]);
+    assert.deepEqual(T.carrotCount, [2, 4, 6, 8, 10, 16]);
     for (const l of LEVELS) {
       const p = createPlayer();
       p.lv.carrot = l;
@@ -85,15 +85,15 @@ test("carrot volley sizes per level: 1, 2, 4, 8, 16, 32", () =>
     }
   }));
 
-test("a 32-carrot volley spreads over few targets and lands within 0.6 s", () =>
+test("a 16-carrot volley spreads over few targets and lands within 0.6 s", () =>
   seeded(() => {
     const p = createPlayer();
     p.lv.carrot = 6;
     const strikes = [];
     carrot(p, ring(p, 3, 200), strikes, createVisualState(), noop, DT);
-    assert.equal(strikes.length, 32);
+    assert.equal(strikes.length, 16);
     const points = new Set(strikes.map((s) => `${Math.round(s.x)}:${Math.round(s.y)}`));
-    assert.ok(points.size >= 30, `distinct impact points: ${points.size}`);
+    assert.ok(points.size >= 15, `distinct impact points: ${points.size}`);
     for (const s of strikes)
       assert.ok(Math.hypot(s.x - p.x, s.y - p.y) < 200 + 55, "stays near the targets");
     const span = -Math.min(...strikes.map((s) => s.t));
@@ -102,7 +102,7 @@ test("a 32-carrot volley spreads over few targets and lands within 0.6 s", () =>
     const empty = [];
     p.cd.carrot = 0;
     carrot(p, [], empty, createVisualState(), noop, DT);
-    assert.equal(empty.length, 32);
+    assert.equal(empty.length, 16);
   }));
 
 test("potato volley sizes per level: 1, 2, 3, 5, 7, 10 whole potatoes, 10 pellets each", () =>
@@ -283,4 +283,35 @@ test("performance: every ingredient at rank 6 with a full horde", () =>
     assert.equal(game.state, "play");
     assert.ok(peak.enemies >= 120, `horde size ${peak.enemies}`);
     assert.ok(avg < 8, `average simulation+snapshot ${avg.toFixed(2)} ms`);
+  }));
+
+test("tomato landing damage is exactly 20% above the old base, before salt and rounding", () =>
+  seeded(() => {
+    for (const l of LEVELS) {
+      const old = 30 + 8 * (l - 1);
+      assert.equal(ABILITY_STATS.tomato(l).dmg, +(old * 1.2).toFixed(1), `level ${l}`);
+      const p = createPlayer();
+      p.lv.tomato = l;
+      p.dmgMul = 1.3; // соль применяется после множителя 1,2
+      const seen = [];
+      const tomato = createTomato(p, ring(p, 1, 100), createVisualState(), (e, dmg) => seen.push(dmg));
+      run(tomato.update, ABILITY_BEHAVIOR.tomato.firstDelay + ABILITY_BEHAVIOR.tomato.fall + 0.5);
+      assert.ok(seen.length >= 1 && Math.abs(seen[0] - old * 1.2) < 1e-9, `level ${l}: ${seen[0]}`);
+    }
+  }));
+
+test("carrot volleys shake the screen weakly and cap the total shake", () =>
+  seeded(() => {
+    const B = ABILITY_BEHAVIOR.carrot.shake;
+    assert.deepEqual(B, { perHit: 1, max: 3 });
+    const p = createPlayer();
+    p.lv.carrot = 6;
+    const strikes = [], fx = createVisualState();
+    carrot(p, ring(p, 8, 200), strikes, fx, noop, DT);
+    let peak = 0;
+    for (let i = 0; i < 90; i++) {
+      carrot(p, [], strikes, fx, noop, DT);
+      peak = Math.max(peak, fx.shake);
+    }
+    assert.ok(peak > 0 && peak <= B.max, `peak ${peak}`);
   }));

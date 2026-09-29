@@ -9,7 +9,7 @@ const FILES = {
   // Враг врезается в котёл и вспыхивает; звук обрезан до 2 с с затуханием.
   contactBurn: { url: "assets/audio/contact-burn.mp3", gain: 0.5 },
 };
-// Минимальный интервал между одинаковыми звуками (сек): залп из 32 морковок
+// Минимальный интервал между одинаковыми звуками (сек): залп из 16 морковок
 // и тики капусты не должны сливаться в шум.
 const THROTTLE = {
   hit_cabbage: 0.11,
@@ -29,11 +29,11 @@ const THROTTLE = {
 };
 // Звуки мобов (гоблины, орда, Страж Колеса и их удары по котлу). Остальные
 // события — звуки ударов и способностей супа.
-const MOB_SOUNDS = new Set(["horde", "playerHurt", "contactBurn", "wardenSpawn", "gravityCast", "wheelAdapt", "slashWindup", "slashStrike"]);
+const MOB_SOUNDS = new Set(["horde", "playerHurt", "contactBurn", "gravityCast", "wheelAdapt", "slashWindup", "slashStrike"]);
 // Шкала громкости 0–100; 70 — задуманный уровень, выше — громче задуманного.
 export const DEFAULT_VOLUMES = { fire: 70, mobs: 70, hits: 70 };
 // События, которые слышно независимо от расстояния.
-const GLOBAL = new Set(["levelUp", "horde", "wardenSpawn", "wheelAdapt", "playerHurt", "contactBurn"]);
+const GLOBAL = new Set(["levelUp", "horde", "wheelAdapt", "playerHurt", "contactBurn"]);
 const MAX_VOICES = 28;
 
 export function createAudio({ enabled = true, volumes = DEFAULT_VOLUMES } = {}) {
@@ -244,11 +244,6 @@ export function createAudio({ enabled = true, volumes = DEFAULT_VOLUMES } = {}) 
     horde: (o) => {
       tone(o, { f0: 60, f1: 42, dur: 0.7, gain: 0.35, attack: 0.01 });
       hiss(o, { filter: "lowpass", f0: 220, dur: 0.5, gain: 0.25 });
-    },
-    wardenSpawn: (o) => {
-      tone(o, { type: "sawtooth", f0: 46, f1: 38, dur: 2.2, gain: 0.07, attack: 0.6 });
-      tone(o, { f0: 92, f1: 76, dur: 2.2, gain: 0.12, attack: 0.5 });
-      hiss(o, { filter: "lowpass", f0: 300, f1: 120, dur: 2, gain: 0.12, attack: 0.5 });
     },
     // Меч Стража: нарастающий свист замаха, затем свист клинка и звон стали.
     slashWindup: (o) => {

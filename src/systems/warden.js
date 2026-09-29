@@ -1,8 +1,8 @@
 import { ENEMY_TYPES, WARDEN, WORLD } from "../data/balance.js";
 import { TAU } from "../shared/math.js";
 import { UPG } from "./upgrades.js";
-// Страж Колеса — босс. Появляется один раз за забег на WARDEN.spawnAt.
-// Здоровье: 10 000 × число ингредиентов игрока с уровнем ≥ 3 (минимум один).
+// Существо-1 (Страж Колеса). Появляется один раз за забег на WARDEN.spawnAt.
+// Здоровье: 2000 × число ингредиентов игрока с уровнем ≥ 3 (минимум один).
 // Адаптация: каждые adaptEvery урона колесо щёлкает, и способность супа,
 // нанёсшая больше всего урона с прошлого щелчка, становится «освоенной»:
 // урон от неё ×0,2, без торможения, отброса, замедления лужей и обращения.
@@ -69,8 +69,8 @@ export function createWarden(player, enemies, clock, fx, edgePos, { onAdapt = ()
       lastY: y,
       lastMove: 0,
     });
+    // Только название, без заставки, паузы и особого звука.
     fx.texts.push({ x: player.x, y: player.y - 150, t: 0, life: 2.4, txt: translate("wardenArrives"), col: "#ece8da", size: 16 });
-    fx.sounds.push({ id: "wardenSpawn", x: player.x, y: player.y });
   }
   function adapt(e) {
     while (e.sinceAdapt >= WARDEN.adaptEvery && e.adapted.length < INGREDIENTS.length) {

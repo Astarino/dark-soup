@@ -6,16 +6,16 @@ export const ENEMY_TYPES = {
   goblin: { hp: 22, spd: 72, dmg: 8, r: 14, xp: 1 },
   runner: { hp: 12, spd: 118, dmg: 6, r: 11, xp: 1 },
   brute: { hp: 110, spd: 50, dmg: 18, r: 24, xp: 6 },
-  // Босс: здоровье считается при появлении (см. WARDEN), тут — за один ингредиент.
-  warden: { hp: 10000, spd: 55, dmg: 30, r: 30, xp: 60 },
+  // Существо-1: здоровье считается при появлении (см. WARDEN), тут — за один ингредиент.
+  warden: { hp: 2000, spd: 66, dmg: 30, r: 30, xp: 60 },
 };
-// Страж Колеса — босс на 5-й минуте. Все числа — стартовый баланс.
+// Существо-1 (Страж Колеса) появляется на 3-й минуте. Все числа — стартовый баланс.
 export const WARDEN = {
-  spawnAt: 300,
+  spawnAt: 180,
   spawnMargin: 320, // не появляться в стене деревьев по краю карты
-  hpPerIngredient: 10000, // × число ингредиентов игрока с уровнем ≥ rankForHp
+  hpPerIngredient: 2000, // × число ингредиентов игрока с уровнем ≥ rankForHp
   rankForHp: 3,
-  minIngredients: 1, // если таких ингредиентов нет, всё равно 10 000
+  minIngredients: 1, // если таких ингредиентов нет, всё равно 2000
   adaptEvery: 5000, // урон между щелчками колеса
   adaptedDamage: 0.2, // урон от освоенной способности делится на 5
   wheelTurnTime: 0.9,
@@ -26,7 +26,7 @@ export const WARDEN = {
 };
 // Таблицы прогрессии по уровням 1–6 (индекс = уровень − 1).
 export const PROGRESSION_TABLES = {
-  carrotCount: [1, 2, 4, 8, 16, 32],
+  carrotCount: [2, 4, 6, 8, 10, 16],
   potatoCount: [1, 2, 3, 5, 7, 10],
   bellPepperCount: [1, 2, 3, 5, 7, 10],
   tomatoCount: [1, 1, 1, 2, 2, 2],
@@ -72,7 +72,7 @@ export const ABILITY_STATS = {
   tomato: (l) => ({
     cd: +(5 - 0.4 * (l - 1)).toFixed(1),
     n: at(PROGRESSION_TABLES.tomatoCount, l),
-    dmg: 30 + 8 * (l - 1),
+    dmg: +((30 + 8 * (l - 1)) * ABILITY_BEHAVIOR.tomato.damageMul).toFixed(1), // до общих бонусов
     r: 60 + 5 * (l - 1),
   }),
   bellPepper: (l) => ({
@@ -130,6 +130,7 @@ export const ABILITY_BEHAVIOR = {
     stagger: 0.12,
     knockback: 220,
     afterglow: 0.5,
+    shake: { perHit: 1, max: 3 }, // тряска от падений: слабая и с общим потолком
   },
   carrotVolley: { spanTime: 0.6, jitter: 0.6, particles: 18, minParticles: 4 },
   cabbage: { tick: 0.5 }, // без отбрасывания; вспышка попадания даёт лёгкое торможение
@@ -168,6 +169,7 @@ export const ABILITY_BEHAVIOR = {
     puddleLife: 4,
     puddleRadius: 70,
     areaGrowth: 1.5, // площадь лужи ×1,5 за каждую секунду после удара
+    damageMul: 1.2, // множитель урона приземления к базе (до соли и прочих бонусов)
     slow: 0.4, // замедление в луже: скорость × (1 − slow)
   },
   bellPepper: {

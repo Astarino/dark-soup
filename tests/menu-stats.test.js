@@ -184,7 +184,7 @@ test("recipe book tables list every rank; volumes are stored per category", () =
     assert.ok(t.head.length >= 2);
   }
   const carrot = levelTable(UPG.find((u) => u.id === "carrot"), tr);
-  assert.deepEqual(carrot.rows.map((r) => r[carrot.head.indexOf("count")]), ["1", "2", "4", "8", "16", "32"]);
+  assert.deepEqual(carrot.rows.map((r) => r[carrot.head.indexOf("count")]), ["2", "4", "6", "8", "10", "16"]);
   assert.equal(seasoningEffect("salt", 2, tr), "damage ×1.30");
   const storage = memory(),
     p = createPreferences(storage);
