@@ -267,7 +267,9 @@ export function createAudio({ enabled = true, volumes = DEFAULT_VOLUMES } = {}) 
     src.connect(g).connect(out);
     src.start();
   }
-  function play(ev, player) {
+  // yaw — направление взгляда (вид от первого лица): стерео считается относительно
+  // него, а не по сторонам света. null — вид сверху, экранный «право/лево».
+  function play(ev, player, yaw = null) {
     const now = ctx.currentTime,
       min = THROTTLE[ev.id] || 0;
     if (min && now - (lastPlayed[ev.id] || -1) < min) return;
@@ -281,19 +283,48 @@ export function createAudio({ enabled = true, volumes = DEFAULT_VOLUMES } = {}) 
     const g = ctx.createGain(),
       p = ctx.createStereoPanner();
     g.gain.value = global ? 1 : 1 / (1 + d / 450);
-    p.pan.value = global ? 0 : clamp(dx / 350, -1, 1) * 0.8;
+    const lateral = yaw === null ? dx : dx * -Math.sin(yaw) + dy * Math.cos(yaw);
+    p.pan.value = global ? 0 : clamp(lateral / 350, -1, 1) * 0.8;
     g.connect(p).connect(MOB_SOUNDS.has(ev.id) ? mobBus : hitBus);
     if (FILES[ev.id]) playFile(ev.id, g);
     else SOUNDS[ev.id]?.(g);
   }
+  // Подсказки о близких врагах вне поля зрения (вид от первого лица): тихий шорох
+  // и низкое ворчание со стороны угрозы. cues — [{ bearing, dist, type }], bearing
+  // относительно взгляда (> 0 — справа). Не чаще раза в 0,55 с на сторону.
+  const lastCue = { left: -9, right: -9 };
+  function threatCues(cues) {
+    if (!ctx || ctx.state !== "running" || !on || !cues?.length) return;
+    const now = ctx.currentTime;
+    for (const c of cues) {
+      const side = Math.sin(c.bearing) >= 0 ? "right" : "left";
+      if (now - lastCue[side] < 0.55) continue;
+      lastCue[side] = now;
+      if (!voice(0.4)) return;
+      const near = clamp(1 - c.dist / 300, 0.15, 1),
+        behind = Math.abs(c.bearing) > Math.PI / 2,
+        g = ctx.createGain(),
+        p = ctx.createStereoPanner(),
+        lp = ctx.createBiquadFilter();
+      g.gain.value = 0.55 * near;
+      p.pan.value = clamp(Math.sin(c.bearing) * 0.95, -1, 1);
+      lp.type = "lowpass";
+      lp.frequency.value = behind ? 700 : 1400; // за спиной звук глуше
+      g.connect(lp).connect(p).connect(mobBus);
+      const pitch = c.type === "brute" ? 0.7 : c.type === "runner" ? 1.35 : 1;
+      hiss(g, { filter: "bandpass", f0: 500 * pitch, f1: 260 * pitch, q: 1.2, dur: 0.28, gain: 0.16, attack: 0.05 });
+      tone(g, { type: "triangle", f0: 118 * pitch, f1: 84 * pitch, dur: 0.26, gain: 0.13, attack: 0.03 });
+      break; // одна подсказка за раз: несколько врагов не превращаются в шум
+    }
+  }
   let lastUpdate = 0;
-  function update(snapshot, events) {
+  function update(snapshot, events, yaw = null) {
     if (!ctx || ctx.state !== "running") return;
     const now = ctx.currentTime,
       dt = Math.min(0.1, now - lastUpdate || 0.016);
     lastUpdate = now;
     updateFire(snapshot, dt);
-    if (on) for (const ev of events) play(ev, snapshot.player);
+    if (on) for (const ev of events) play(ev, snapshot.player, yaw);
   }
   return {
     unlock,
@@ -301,6 +332,7 @@ export function createAudio({ enabled = true, volumes = DEFAULT_VOLUMES } = {}) 
     setVolumes,
     preview,
     update,
+    threatCues,
     get enabled() {
       return on;
     },

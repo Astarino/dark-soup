@@ -3,7 +3,11 @@ import { K, WORLD, CX, CY } from "../data/balance.js";
 import { mk, rgb, dith } from "./pixels.js";
 import { OUT } from "./style.js";
 import { BUSHES } from "./sprites.js";
-export const GROUND = (() => {
+// Земля запекается один раз без кустов: кусты записываются как точки (BUSH_SPOTS)
+// и рисуются поверх копии для вида сверху (GROUND), а вид от первого лица ставит на
+// эти же точки объёмные кусты (GROUND_BASE).
+export const BUSH_SPOTS = [];
+export const GROUND_BASE = (() => {
   const GW = WORLD.w / K,
     GH = WORLD.h / K,
     c = mk(GW, GH),
@@ -101,7 +105,7 @@ export const GROUND = (() => {
       x = ri(GW),
       y = ri(GH);
     if (Math.hypot(x - ccx, y - ccy) < 150) continue;
-    g.drawImage(b, x, y);
+    BUSH_SPOTS.push({ variant: BUSHES.indexOf(b), x, y, w: b.width, h: b.height });
   }
   // старое кострище у палатки
   const fx = Math.round((CX - 110) / K),
@@ -123,5 +127,12 @@ export const GROUND = (() => {
     g.fillStyle = "#7a766c";
     g.fillRect(x - 1, y - 1, 2, 1);
   }
+  return c;
+})();
+export const GROUND = (() => {
+  const c = mk(GROUND_BASE.width, GROUND_BASE.height),
+    g = c.getContext("2d");
+  g.drawImage(GROUND_BASE, 0, 0);
+  for (const b of BUSH_SPOTS) g.drawImage(BUSHES[b.variant], b.x, b.y);
   return c;
 })();

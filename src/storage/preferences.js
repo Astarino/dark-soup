@@ -30,5 +30,19 @@ export function createPreferences(storage) {
       }
     },
     saveVolumes: (v) => write("dark_soup_volume", JSON.stringify(v)),
+    // Вид (сверху / от первого лица) и настройки первого лица: отдельные ключи,
+    // не связанные с игровыми характеристиками и статистикой.
+    // Значения отдаются как есть: слой storage ничего не знает о данных игры,
+    // проверку и значения по умолчанию делает data/view-mode.js.
+    view: () => read("dark_soup_view", null),
+    saveView: (value) => write("dark_soup_view", value),
+    firstPerson: () => {
+      try {
+        return JSON.parse(read("dark_soup_fp", "{}"));
+      } catch {
+        return {};
+      }
+    },
+    saveFirstPerson: (settings) => write("dark_soup_fp", JSON.stringify(settings)),
   };
 }

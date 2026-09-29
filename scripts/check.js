@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync } from "node:fs";
-import { resolve, relative, dirname } from "node:path";
+import { resolve, relative, dirname, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 const root = fileURLToPath(new URL("../", import.meta.url));
@@ -14,6 +14,9 @@ const allowed = {
   storage: ["storage"],
   input: ["input", "data", "shared"],
   render: ["render", "world", "abilities", "systems", "data", "shared"],
+  // Вид от первого лица: читает те же модели, что и render; Three.js — только
+  // из локальной копии vendor/three (единственный внешний модуль, см. ниже).
+  render3d: ["render3d", "render", "world", "abilities", "systems", "data", "shared"],
   ui: ["ui", "render", "systems", "data", "shared"],
   audio: ["audio", "data", "shared"],
 };
@@ -30,6 +33,8 @@ for (const folder of ["src", "scripts", "tests"]) {
     if (folder === "src") {
       const layer = name.split("/")[0];
       for (const [, specifier] of source.matchAll(/from\s+['"]([^'"]+)['"]/g)) {
+        const absolute = resolve(dirname(path), specifier);
+        if (layer === "render3d" && absolute.startsWith(resolve(root, "vendor", "three") + sep)) continue;
         const target = relative(
           resolve(root, "src"),
           resolve(dirname(path), specifier),

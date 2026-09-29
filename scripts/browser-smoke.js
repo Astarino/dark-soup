@@ -61,7 +61,7 @@
     document.getElementById("bookCounter").textContent === first,
     "book previous",
   );
-  for (let i = 0; i < 10; i++) click("bookNextBtn");
+  for (let i = 0; i < 14; i++) click("bookNextBtn"); // на телефоне одна страница за раз
   assert(document.getElementById("bookNextBtn").disabled, "last page boundary");
   press("Escape");
   assert(
@@ -131,6 +131,45 @@
   assert(JSON.parse(localStorage.getItem("dark_soup_volume")).fire === 40, "fire volume saved");
   click("soundBackBtn");
   assert(document.getElementById("soupState").textContent.length > 0, "soup state in pause");
+  // Скрытый переключатель вида: неверный код ничего не меняет, Escape закрывает только окно кода,
+  // верный код переключает вид и не возобновляет паузу; повторный ввод возвращает вид сверху.
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  const typeCode = (code, enter = true) => {
+    const input = document.getElementById("codeInput");
+    input.value = code;
+    input.dispatchEvent(new Event("input"));
+    if (enter) input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+  };
+  const viewBefore = window.__game.view();
+  const timeBefore = state().time;
+  click("pauseSettingsBtn");
+  assert(document.getElementById("viewChangeBtn").textContent === "change", "exact button label");
+  click("viewChangeBtn");
+  assert(document.getElementById("codeModal").classList.contains("show"), "code window opens");
+  typeCode("1111");
+  assert(document.getElementById("codeError").textContent.length > 0, "wrong code shows an error");
+  assert(window.__game.view() === viewBefore, "wrong code changes nothing");
+  document.getElementById("codeInput").dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+  assert(!document.getElementById("codeModal").classList.contains("show"), "Escape closes the code window");
+  assert(document.getElementById("settings").classList.contains("show"), "settings stay open");
+  for (let round = 0; round < 2; round++) {
+    click("viewChangeBtn");
+    typeCode("1234");
+    for (let i = 0; i < 200 && document.getElementById("viewStatus").textContent === "..."; i++) await sleep(50);
+    await sleep(1500); // загрузка Three.js и запекание спрайтов при первом включении
+    const now = window.__game.view();
+    const status = document.getElementById("viewStatus").textContent;
+    assert(now !== viewBefore || round > 0 || status.length > 0, "the code switches the view (or explains why it cannot)");
+    assert(state().state === "pause" && state().time === timeBefore, "switching the view keeps the pause and the clock");
+    if (now === viewBefore) break; // WebGL недоступен: остался прежний вид, это допустимо
+  }
+  if (window.__game.view() !== viewBefore) {
+    click("viewChangeBtn");
+    typeCode("1234");
+    await sleep(500);
+    assert(window.__game.view() === viewBefore, "the same code returns to the top view");
+  }
+  click("settingsBackBtn");
   // Главное меню и статистика.
   click("pauseMenuBtn");
   assert(state().state === "menu", "back to the main menu");
@@ -143,6 +182,6 @@
     counter,
     state: state().state,
     checks:
-      "intro, keyboard, pointer, pause, soup state, resume, restart, languages, persistence, settings, recipes, sound, statistics, main menu",
+      "intro, keyboard, pointer, pause, soup state, resume, restart, languages, persistence, settings, recipes, sound, hidden view switch, statistics, main menu",
   };
 })();

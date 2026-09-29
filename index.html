@@ -118,6 +118,31 @@
     .bookHeader button,.bookFooter button{font-size:8px}
   }
   @media (min-width:641px){ .card .txt{display:contents} }
+  /* Скрытый переключатель вида и настройки первого лица */
+  #viewChangeBtn{margin-top:4px!important;min-height:44px;font-size:10px!important;text-transform:none}
+  #viewStatus{min-height:22px;margin:10px 0 0;text-align:center;font-size:16px;color:#bfa98a}
+  #viewStatus.err{color:#ff8a70}
+  .fpSettings{margin:16px 0 4px;padding:12px 12px 4px;background:#170f09;box-shadow:inset 0 0 0 2px #33241a}
+  .fpSettings h3{margin:0 0 6px;color:var(--accent);font:10px/1.5 var(--px);text-align:center}
+  .fpSettings .choices{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:8px 0 14px}
+  .fpSettings .choices button{min-width:90px}
+  .fpSettings .choices button.selected{background:#759542;color:#101308;box-shadow:0 0 0 3px var(--edge),inset -4px -4px 0 #465c27,inset 4px 4px 0 #a8cf67}
+  .fpSettings .slider{margin:8px 0}
+  .fpSettings .note{margin:4px 0 10px;font-size:15px;text-align:center}
+  #codeModal{z-index:14;align-items:flex-start;padding-top:min(18vh,120px)}
+  #codeModal .panel{width:min(360px,100%)}
+  #codeModal h2{margin-bottom:6px}
+  #codeInput{display:block;width:100%;margin:12px 0 4px;padding:14px 12px;border:0;background:#0f0a06;color:#ffe0b0;
+    font:22px/1 var(--px);letter-spacing:6px;text-align:center;outline:none;-webkit-user-select:text;user-select:text;
+    box-shadow:0 0 0 3px var(--edge),inset 0 0 0 2px #3a2a1c}
+  #codeInput:focus-visible{box-shadow:0 0 0 3px var(--accent),inset 0 0 0 2px #3a2a1c}
+  #codeInput[aria-invalid="true"]{box-shadow:0 0 0 3px #d8452e,inset 0 0 0 2px #6a1a10}
+  #codeError{min-height:24px;margin:6px 0 4px;font-size:17px;color:#ff8a70}
+  #codeModal .actions{display:flex;justify-content:center;gap:12px}
+  #codeModal .actions button{margin:6px 0 0;min-width:120px}
+  #codeModal.shake .panel{animation:codeShake .28s}
+  @keyframes codeShake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+  @media (prefers-reduced-motion:reduce){#codeModal.shake .panel{animation:none}}
   /* Единые кнопки меню: одинаковый размер и вид */
   .menuButtons{display:flex;flex-direction:column;gap:12px;margin-top:16px}
   .menuButtons.two{display:grid;grid-template-columns:1fr 1fr}
@@ -266,7 +291,38 @@
         <span id="recipeCoverHint" class="coverHint"></span>
       </button>
     </div>
-    <div class="menuButtons"><button id="settingsBackBtn" class="menuBtn"></button></div>
+    <div id="fpSettings" class="fpSettings" hidden>
+      <h3 id="fpTitle"></h3>
+      <div class="slider"><label id="fpSensLabel" for="fpSens"></label><input id="fpSens" type="range" min="0.2" max="3" step="0.1"><output id="fpSensOut"></output></div>
+      <div id="fpSwayChoices" class="choices">
+        <button id="fpSwayOn" class="small" type="button"></button>
+        <button id="fpSwayOff" class="small" type="button"></button>
+      </div>
+      <h3 id="fpQualityTitle"></h3>
+      <div id="fpQualityChoices" class="choices">
+        <button id="fpQHigh" class="small" type="button"></button>
+        <button id="fpQMedium" class="small" type="button"></button>
+        <button id="fpQLow" class="small" type="button"></button>
+      </div>
+      <p class="hint note" id="fpControlsHint"></p>
+    </div>
+    <div class="menuButtons">
+      <button id="viewChangeBtn" class="menuBtn ghost" type="button">change</button>
+      <p id="viewStatus" role="status" aria-live="polite"></p>
+      <button id="settingsBackBtn" class="menuBtn"></button>
+    </div>
+  </div>
+</div>
+
+<div id="codeModal" class="overlay" role="dialog" aria-modal="true" aria-labelledby="codeTitle" aria-describedby="codeError">
+  <div class="panel">
+    <h2 id="codeTitle"></h2>
+    <input id="codeInput" type="text" inputmode="numeric" pattern="[0-9]*" enterkeyhint="done" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="12" aria-label="code">
+    <p id="codeError" role="alert"></p>
+    <div class="actions">
+      <button id="codeOkBtn" type="button"></button>
+      <button id="codeCancelBtn" class="ghost" type="button"></button>
+    </div>
   </div>
 </div>
 

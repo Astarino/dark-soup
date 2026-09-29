@@ -37,13 +37,15 @@ export function createInput(cvs, { onKey, onHidden }) {
   cvs.addEventListener("pointercancel", joyEnd);
   cvs.addEventListener("contextmenu", (e) => e.preventDefault());
 
-  function inputVec() {
+  // arrows: в виде сверху стрелки двигают котёл, в виде от первого лица — вращают
+  // камеру, поэтому их движение можно отключить.
+  function inputVec({ arrows = true } = {}) {
     let x = 0,
       y = 0;
-    if (keys.has("KeyA") || keys.has("ArrowLeft")) x -= 1;
-    if (keys.has("KeyD") || keys.has("ArrowRight")) x += 1;
-    if (keys.has("KeyW") || keys.has("ArrowUp")) y -= 1;
-    if (keys.has("KeyS") || keys.has("ArrowDown")) y += 1;
+    if (keys.has("KeyA") || (arrows && keys.has("ArrowLeft"))) x -= 1;
+    if (keys.has("KeyD") || (arrows && keys.has("ArrowRight"))) x += 1;
+    if (keys.has("KeyW") || (arrows && keys.has("ArrowUp"))) y -= 1;
+    if (keys.has("KeyS") || (arrows && keys.has("ArrowDown"))) y += 1;
     if (joy.active) {
       let dx = joy.x - joy.ox,
         dy = joy.y - joy.oy;
@@ -69,6 +71,9 @@ export function createInput(cvs, { onKey, onHidden }) {
 
   return {
     vector: inputVec,
+    // Одна клавиатурная подписка на всех: вид от первого лица читает клавиши здесь.
+    isDown: (code) => keys.has(code),
+    releaseKeys: () => keys.clear(),
     clearPointer: () => {
       joy.active = false;
     },

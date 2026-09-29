@@ -48,7 +48,8 @@ export function createGame(
     slowmo = 0,
     kills,
     run,
-    runFinished = true;
+    runFinished = true,
+    nextEnemyId = 1;
   // Главное меню: время сцены лагеря и плавный пролёт камеры к котлу.
   const INTRO = 1.4;
   let menuTime = 0,
@@ -58,6 +59,7 @@ export function createGame(
     const steamT = fx?.steamT ?? 0; // The original menu steam timer survives restart.
     player = createPlayer(catalog);
     enemies = [];
+    nextEnemyId = 1;
     gems = [];
     clock = { time: 0 };
     kills = 0;
@@ -237,6 +239,9 @@ export function createGame(
       run.bossMet = true;
       run.bossAdapted = [...boss.adapted];
     }
+    // Стабильный номер нужен только рендерам (сопоставление кадров, смерть);
+    // он не участвует в правилах и не тратит случайность.
+    for (const e of enemies) if (e.id === undefined) e.id = nextEnemyId++;
     experience.updateGems(dt);
     visuals.updateFx(dt);
     followPlayer(cam, player, dt);

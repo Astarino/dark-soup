@@ -9,7 +9,11 @@ import {
 
 const results = REFERENCE_RUNS.map((run) => {
   const checkpoints = [];
-  playReference(run, (frame, snapshot) => checkpoints.push({ frame, snapshot }));
+  // Enemy ids are renderer-only data; fixtures record gameplay (see tests/regression.test.js).
+  playReference(run, (frame, snapshot) => {
+    snapshot.enemies = snapshot.enemies.map(({ id, ...enemy }) => enemy);
+    checkpoints.push({ frame, snapshot });
+  });
   return { ...run, checkpoints };
 });
 fs.mkdirSync(new URL("../tests/fixtures/", import.meta.url), { recursive: true });
