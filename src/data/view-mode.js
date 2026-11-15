@@ -4,10 +4,8 @@ export const VIEWS = Object.freeze({ top: "top", first: "first" });
 export const VIEW_CODE = "1234";
 export const DEFAULT_VIEW = VIEWS.top;
 
-// Любое неизвестное сохранённое значение — вид сверху.
 export const normalizeView = (value) => (value === VIEWS.first ? VIEWS.first : VIEWS.top);
 export const toggledView = (view) => (view === VIEWS.first ? VIEWS.top : VIEWS.first);
-// Пробелы по краям не считаются ошибкой (телефонная клавиатура любит их добавлять).
 export const isViewCode = (text) => String(text ?? "").trim() === VIEW_CODE;
 
 // Настройки вида от первого лица. Значения хранятся отдельно от игровых характеристик.
